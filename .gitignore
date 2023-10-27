@@ -13,6 +13,10 @@
 # Python
 /venv/
 
+# Project
+/Assets/Imports/
+/Assets/Neural_Network/
+
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
