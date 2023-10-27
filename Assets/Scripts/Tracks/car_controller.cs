@@ -2,6 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Car controller taken from GameDevChef
+/// https://github.com/GameDevChef/CarController
+/// </summary>
 public class car_controller : MonoBehaviour
 {
 
@@ -40,7 +44,7 @@ public class car_controller : MonoBehaviour
     private void GetInput()
     {
         horizontalInput = Input.GetAxis("Horizontal");
-        verticalInput = Input.GetAxis("Vertical");
+        verticalInput = -Input.GetAxis("Vertical");
         isBreaking = Input.GetKey(KeyCode.Space);
     }
 
