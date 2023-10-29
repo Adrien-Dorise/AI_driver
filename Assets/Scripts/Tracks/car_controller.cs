@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,37 +10,33 @@ using UnityEngine;
 public class car_controller : MonoBehaviour
 {
 
-    private const string HORIZONTAL = "Horizontal";
-    private const string VERTICAL = "Vertical";
+    public bool isAgent;
+    private int wheel_number;
 
-    private float horizontalInput;
-    private float verticalInput;
+    public float horizontalInput;
+    public float verticalInput;
+    public bool isBreaking;
+
     private float currentSteerAngle;
     private float currentbreakForce;
-    private bool isBreaking;
 
     [SerializeField] private float motorForce;
     [SerializeField] private float breakForce;
     [SerializeField] private float maxSteerAngle;
 
-    [SerializeField] private WheelCollider frontLeftWheelCollider;
-    [SerializeField] private WheelCollider frontRightWheelCollider;
-    [SerializeField] private WheelCollider rearLeftWheelCollider;
-    [SerializeField] private WheelCollider rearRightWheelCollider;
-
-    [SerializeField] private Transform frontLeftWheelTransform;
-    [SerializeField] private Transform frontRightWheeTransform;
-    [SerializeField] private Transform rearLeftWheelTransform;
-    [SerializeField] private Transform rearRightWheelTransform;
-
-    private void FixedUpdate()
+    private Transform[] wheels = new Transform[4];
+    private WheelCollider[] wheelColliders = new WheelCollider[4];
+    
+    private void Awake()
     {
-        GetInput();
-        HandleMotor();
-        HandleSteering();
-        UpdateWheels();
+        wheel_number = 4;
+        isAgent = false;
+        for(int i=0; i<wheel_number; i++)
+        {
+            wheels[i] = this.transform.GetChild(1).GetChild(i);
+            wheelColliders[i] = this.transform.GetChild(2).GetChild(i).GetComponent<WheelCollider>();
+        }
     }
-
 
     private void GetInput()
     {
@@ -47,36 +44,37 @@ public class car_controller : MonoBehaviour
         verticalInput = -Input.GetAxis("Vertical");
         isBreaking = Input.GetKey(KeyCode.Space);
     }
+    
 
     private void HandleMotor()
     {
-        frontLeftWheelCollider.motorTorque = verticalInput * motorForce;
-        frontRightWheelCollider.motorTorque = verticalInput * motorForce;
+        wheelColliders[1].motorTorque = verticalInput * motorForce;
+        wheelColliders[3].motorTorque = verticalInput * motorForce;
         currentbreakForce = isBreaking ? breakForce : 0f;
         ApplyBreaking();       
     }
 
     private void ApplyBreaking()
     {
-        frontRightWheelCollider.brakeTorque = currentbreakForce;
-        frontLeftWheelCollider.brakeTorque = currentbreakForce;
-        rearLeftWheelCollider.brakeTorque = currentbreakForce;
-        rearRightWheelCollider.brakeTorque = currentbreakForce;
+        foreach(WheelCollider wheelColl in wheelColliders)
+        {
+            wheelColl.brakeTorque = currentbreakForce;
+        }
     }
 
     private void HandleSteering()
     {
         currentSteerAngle = maxSteerAngle * horizontalInput;
-        frontLeftWheelCollider.steerAngle = currentSteerAngle;
-        frontRightWheelCollider.steerAngle = currentSteerAngle;
+        wheelColliders[1].steerAngle = currentSteerAngle;
+        wheelColliders[3].steerAngle = currentSteerAngle;
     }
 
     private void UpdateWheels()
     {
-        UpdateSingleWheel(frontLeftWheelCollider, frontLeftWheelTransform);
-        UpdateSingleWheel(frontRightWheelCollider, frontRightWheeTransform);
-        UpdateSingleWheel(rearRightWheelCollider, rearRightWheelTransform);
-        UpdateSingleWheel(rearLeftWheelCollider, rearLeftWheelTransform);
+        for(int i=0; i<wheel_number; i++)
+        {
+            UpdateSingleWheel(wheelColliders[i], wheels[i]);
+        }
     }
 
     private void UpdateSingleWheel(WheelCollider wheelCollider, Transform wheelTransform)
@@ -86,5 +84,16 @@ public class car_controller : MonoBehaviour
         wheelCollider.GetWorldPose(out pos, out rot);
         wheelTransform.rotation = rot * Quaternion.Euler(new Vector3(0, 90, 0));;
         wheelTransform.position = pos;
+    }
+
+    private void FixedUpdate()
+    {
+        if(!isAgent)
+        {
+            GetInput();
+        }
+        HandleMotor();
+        HandleSteering();
+        UpdateWheels();
     }
 }
