@@ -42,7 +42,7 @@ public class car_controller : MonoBehaviour
     private void GetInput()
     {
         horizontalInput = Input.GetAxis("Horizontal");
-        verticalInput = -Input.GetAxis("Vertical");
+        verticalInput = Input.GetAxis("Vertical");
         isBreaking = Input.GetKey(KeyCode.Space);
     }
     
@@ -83,14 +83,8 @@ public class car_controller : MonoBehaviour
         Vector3 pos;
         Quaternion rot;
         wheelCollider.GetWorldPose(out pos, out rot);
-        wheelTransform.rotation = rot * Quaternion.Euler(new Vector3(0, 90, 0));;
+        wheelTransform.rotation = rot * Quaternion.Euler(new Vector3(0, -90, 0));;
         wheelTransform.position = pos;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        Debug.Log(other.gameObject.name);
-        Debug.Log(other.tag);
     }
 
     private void FixedUpdate()
