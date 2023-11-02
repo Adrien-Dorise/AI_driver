@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -84,6 +85,12 @@ public class car_controller : MonoBehaviour
         wheelCollider.GetWorldPose(out pos, out rot);
         wheelTransform.rotation = rot * Quaternion.Euler(new Vector3(0, 90, 0));;
         wheelTransform.position = pos;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log(other.gameObject.name);
+        Debug.Log(other.tag);
     }
 
     private void FixedUpdate()

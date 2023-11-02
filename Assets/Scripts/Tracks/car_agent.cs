@@ -56,8 +56,9 @@ public class car_agent : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
-        sensor.AddObservation(target.localPosition);
-        sensor.AddObservation(this.transform.localPosition);
+        sensor.AddObservation(target.localPosition); // 3 observations
+        sensor.AddObservation(this.transform.localPosition); // 3 observations
+
 
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
@@ -111,7 +112,7 @@ public class car_agent : Agent
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.tag == "Death Floor")
+        if(other.tag == "Death")
         {
             EndEpisode();
         }

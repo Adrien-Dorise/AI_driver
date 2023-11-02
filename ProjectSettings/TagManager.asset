@@ -8,7 +8,7 @@ TagManager:
   - PNJ
   - Ground
   - Road
-  - Death Floor
+  - Death
   layers:
   - Default
   - TransparentFX
