@@ -45,7 +45,14 @@ public class car_agent : Agent
 
     public override void OnEpisodeBegin()
     {
+        positionStep = UnityEngine.Random.Range(0, trainingPositions.transform.childCount);
+        for(int i=0; i<trainingPositions.transform.childCount; i++)
+        {
+            trainingPositions.transform.GetChild(i).gameObject.SetActive(false);
+        }
         Transform startPosition = trainingPositions.transform.GetChild(positionStep).GetChild(0); 
+        trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
+        target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
 
         //Move car to initial position
         this.rBody.angularVelocity = Vector3.zero;
@@ -59,11 +66,23 @@ public class car_agent : Agent
         lastDistanceToTarget = 10000f;
     }
 
+
+    private Vector3 distanceVector(Transform object1, Transform object2)
+    {
+        float x, y, z;
+
+        x = transform.position.x - transform.position.x;
+        y = transform.position.y - transform.position.y;
+        z = transform.position.z - transform.position.z;
+        return new Vector3(x, y, z);
+    }
+
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
-        sensor.AddObservation(target.position); // 3 observations
-        sensor.AddObservation(this.transform.position); // 3 observations
+        sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+        //sensor.AddObservation(target.position); // 3 observations
+        //sensor.AddObservation(this.transform.position); // 3 observations
 
 
         // Agent velocity
@@ -112,11 +131,11 @@ public class car_agent : Agent
         
         if(distanceToTarget < lastDistanceToTarget)
         {
-            SetReward(0.1f);
+            //AddReward(0.01f);
         }
         else
         {
-            SetReward(-0.1f);
+            //AddReward(-0.01f);
         }
 
         lastDistanceToTarget = distanceToTarget;
@@ -134,18 +153,22 @@ public class car_agent : Agent
         if(other.tag == "Death")
         {
             SetReward(-0.5f);
-            EndEpisode();
+            //EndEpisode();
+        }
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(collision.transform.tag == "Death")
+        {
+            SetReward(-0.5f);
         }
     }
 
-    int maxStep = 15000;
-    int step = 0;
+    int maxStep = 2000;
     private void FixedUpdate()
     {
-        step+=1;
-        if(step >= maxStep)
+        if(this.StepCount >= maxStep)
         {
-            step = 0;
             EndEpisode();
         }
     }

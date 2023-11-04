@@ -118,7 +118,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7032645730129870776}
   - component: {fileID: 1370560852612981058}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Left Border
   m_TagString: Death
   m_Icon: {fileID: 0}
@@ -155,7 +155,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -171,7 +171,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1446740571223095394}
   - component: {fileID: 7974761408985848797}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Right Border
   m_TagString: Death
   m_Icon: {fileID: 0}
@@ -208,7 +208,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
