@@ -31,8 +31,9 @@ public class car_agent : Agent
         var continuousActionsOut = actionsOut.ContinuousActions;
         var discreteActionsOut = actionsOut.DiscreteActions;
         
-        continuousActionsOut[0] = Input.GetAxis("Horizontal");
-        continuousActionsOut[1] = Input.GetAxis("Vertical");
+        //continuousActionsOut[0] = Input.GetAxis("Horizontal");
+        //continuousActionsOut[1] = Input.GetAxis("Vertical");
+
         if(Input.GetKey(KeyCode.Space))
         {
             discreteActionsOut[0] = 1;
@@ -41,6 +42,9 @@ public class car_agent : Agent
         {
             discreteActionsOut[0] = 0;
         }
+
+        
+        
     }
 
     public override void OnEpisodeBegin()
@@ -71,10 +75,10 @@ public class car_agent : Agent
     {
         float x, y, z;
 
-        x = transform.position.x - transform.position.x;
-        y = transform.position.y - transform.position.y;
-        z = transform.position.z - transform.position.z;
-        return new Vector3(x, y, z);
+        x = object1.transform.position.x - object2.transform.position.x;
+        y = object1.transform.position.y - object2.transform.position.y;
+        z = object1.transform.position.z - object2.transform.position.z;
+        return new Vector3(x, y, z) / 50 ;
     }
 
     public override void CollectObservations(VectorSensor sensor)
@@ -94,8 +98,8 @@ public class car_agent : Agent
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         // Actions, size = 2
-        car_script.horizontalInput = actionBuffers.ContinuousActions[0];
-        car_script.verticalInput = actionBuffers.ContinuousActions[1];
+        //car_script.horizontalInput = actionBuffers.ContinuousActions[0];
+        //car_script.verticalInput = actionBuffers.ContinuousActions[1];
 
         if(actionBuffers.DiscreteActions[0] == 1)
         {
@@ -105,6 +109,33 @@ public class car_agent : Agent
         {
             car_script.isBreaking = false;
         }
+
+        if(actionBuffers.DiscreteActions[1] == 0)
+        {
+            car_script.horizontalInput = 0;
+        }
+        else if(actionBuffers.DiscreteActions[1] == 1)
+        {
+            car_script.horizontalInput = 1;
+        }
+        else if(actionBuffers.DiscreteActions[1] == 2)
+        {
+            car_script.horizontalInput = -1;
+        }
+
+        if(actionBuffers.DiscreteActions[2] == 0)
+        {
+            car_script.verticalInput = 0;
+        }
+        else if(actionBuffers.DiscreteActions[2] == 1)
+        {
+            car_script.verticalInput = 1;
+        }
+        else if(actionBuffers.DiscreteActions[2] == 2)
+        {
+            car_script.verticalInput = -1;
+        }
+
 
         // Rewards
         float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
@@ -131,11 +162,11 @@ public class car_agent : Agent
         
         if(distanceToTarget < lastDistanceToTarget)
         {
-            //AddReward(0.01f);
+            AddReward(0.00001f);
         }
         else
         {
-            //AddReward(-0.01f);
+            AddReward(-0.00005f);
         }
 
         lastDistanceToTarget = distanceToTarget;
@@ -152,19 +183,20 @@ public class car_agent : Agent
     {
         if(other.tag == "Death")
         {
-            SetReward(-0.5f);
-            //EndEpisode();
+            SetReward(-1f);
+            EndEpisode();
         }
     }
     private void OnCollisionEnter(Collision collision)
     {
         if(collision.transform.tag == "Death")
         {
-            SetReward(-0.5f);
+            SetReward(-1f);
+            EndEpisode();
         }
     }
 
-    int maxStep = 2000;
+    int maxStep = 5000;
     private void FixedUpdate()
     {
         if(this.StepCount >= maxStep)

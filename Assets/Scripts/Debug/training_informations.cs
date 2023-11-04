@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.MLAgents.Sensors;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class training_informations : MonoBehaviour
@@ -9,12 +11,16 @@ public class training_informations : MonoBehaviour
     private car_controller car_script;
     private car_agent agent_script;
     private string debug_text;
+    [SerializeField] List<float> observations = new List<float>();
+
 
     // Start is called before the first frame update
     void Start()
     {
         car_script = car_agent.GetComponent<car_controller>();
         agent_script = car_agent.GetComponent<car_agent>();
+
+
     }
 
 
@@ -28,6 +34,10 @@ public class training_informations : MonoBehaviour
                      "\nEpisode = " + agent_script.CompletedEpisodes.ToString();
 
         this.GetComponent<TextMesh>().text = debug_text;
-                    
+        observations.Clear();
+        foreach (float obs in agent_script.GetObservations())
+        {
+            observations.Add(obs);                    
+        }
     }
 }
