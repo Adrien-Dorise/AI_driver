@@ -9,17 +9,21 @@ using Unity.VisualScripting;
 public class car_agent : Agent
 {
     private Rigidbody rBody;
-    private Transform target;
+    [SerializeField] private Transform target;
     private car_controller car_script;
+    [SerializeField] private GameObject trainingPositions;
+    [SerializeField] private int positionStep;
 
     private float lastDistanceToTarget;
     void Start () 
     {
         rBody = GetComponent<Rigidbody>();
-        target = GameObject.Find("Target").transform;
+        //trainingPositions = GameObject.Find("Training Positions");
+        target = trainingPositions.transform.GetChild(0).GetChild(1);
         car_script = this.gameObject.GetComponent<car_controller>();
         car_script.isAgent = true;
         lastDistanceToTarget = 10000f;
+        positionStep = 0;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -27,8 +31,9 @@ public class car_agent : Agent
         var continuousActionsOut = actionsOut.ContinuousActions;
         var discreteActionsOut = actionsOut.DiscreteActions;
         
-        continuousActionsOut[0] = Input.GetAxis("Horizontal");
-        continuousActionsOut[1] = -Input.GetAxis("Vertical");
+        //continuousActionsOut[0] = Input.GetAxis("Horizontal");
+        //continuousActionsOut[1] = Input.GetAxis("Vertical");
+
         if(Input.GetKey(KeyCode.Space))
         {
             discreteActionsOut[0] = 1;
@@ -37,27 +42,52 @@ public class car_agent : Agent
         {
             discreteActionsOut[0] = 0;
         }
+
+        
+        
     }
 
     public override void OnEpisodeBegin()
     {
+        positionStep = UnityEngine.Random.Range(0, trainingPositions.transform.childCount);
+        for(int i=0; i<trainingPositions.transform.childCount; i++)
+        {
+            trainingPositions.transform.GetChild(i).gameObject.SetActive(false);
+        }
+        Transform startPosition = trainingPositions.transform.GetChild(positionStep).GetChild(0); 
+        trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
+        target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
+
         //Move car to initial position
         this.rBody.angularVelocity = Vector3.zero;
         this.rBody.velocity = Vector3.zero;
-        this.transform.position = new Vector3(0.28f, 0.5f, -16.13f);
-        this.transform.rotation = Quaternion.Euler(0f,-90f,0f);
+        this.transform.position = startPosition.position;
+        this.transform.rotation = startPosition.localRotation;
 
         //Move target to initial spot
-        target.localPosition = new Vector3(5f, 0.5f, -15.5f);
+        //target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
 
         lastDistanceToTarget = 10000f;
+    }
+
+
+    private Vector3 distanceVector(Transform object1, Transform object2)
+    {
+        float x, y, z;
+
+        x = object1.transform.position.x - object2.transform.position.x;
+        y = object1.transform.position.y - object2.transform.position.y;
+        z = object1.transform.position.z - object2.transform.position.z;
+        return new Vector3(x, y, z) / 50 ;
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
-        sensor.AddObservation(target.localPosition);
-        sensor.AddObservation(this.transform.localPosition);
+        sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+        //sensor.AddObservation(target.position); // 3 observations
+        //sensor.AddObservation(this.transform.position); // 3 observations
+
 
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
@@ -68,8 +98,8 @@ public class car_agent : Agent
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         // Actions, size = 2
-        car_script.horizontalInput = actionBuffers.ContinuousActions[0];
-        car_script.verticalInput = actionBuffers.ContinuousActions[1];
+        //car_script.horizontalInput = actionBuffers.ContinuousActions[0];
+        //car_script.verticalInput = actionBuffers.ContinuousActions[1];
 
         if(actionBuffers.DiscreteActions[0] == 1)
         {
@@ -80,29 +110,69 @@ public class car_agent : Agent
             car_script.isBreaking = false;
         }
 
+        if(actionBuffers.DiscreteActions[1] == 0)
+        {
+            car_script.horizontalInput = 0;
+        }
+        else if(actionBuffers.DiscreteActions[1] == 1)
+        {
+            car_script.horizontalInput = 1;
+        }
+        else if(actionBuffers.DiscreteActions[1] == 2)
+        {
+            car_script.horizontalInput = -1;
+        }
+
+        if(actionBuffers.DiscreteActions[2] == 0)
+        {
+            car_script.verticalInput = 0;
+        }
+        else if(actionBuffers.DiscreteActions[2] == 1)
+        {
+            car_script.verticalInput = 1;
+        }
+        else if(actionBuffers.DiscreteActions[2] == 2)
+        {
+            car_script.verticalInput = -1;
+        }
+
+
         // Rewards
-        float distanceToTarget = Vector3.Distance(this.transform.localPosition, target.localPosition);
+        float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
 
         // Reached target
         if (distanceToTarget < 1.42f)
         {
             SetReward(1.0f);
-            EndEpisode();
+            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(false);
+            
+            if(positionStep + 1 >= trainingPositions.transform.childCount)
+            {
+                positionStep = 0;
+            }
+            else
+            {
+                positionStep++;
+            }
+            
+            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
+            target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
+            target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
         }
         
         if(distanceToTarget < lastDistanceToTarget)
         {
-            SetReward(01f);
+            AddReward(0.00001f);
         }
         else
         {
-            SetReward(-0.1f);
+            AddReward(-0.00005f);
         }
 
         lastDistanceToTarget = distanceToTarget;
 
         // Fell off platform
-        if (this.transform.localPosition.y < 0)
+        if (this.transform.position.y < 0)
         {
             EndEpisode();
         }
@@ -111,20 +181,26 @@ public class car_agent : Agent
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.tag == "Death Floor")
+        if(other.tag == "Death")
         {
+            SetReward(-1f);
+            EndEpisode();
+        }
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(collision.transform.tag == "Death")
+        {
+            SetReward(-1f);
             EndEpisode();
         }
     }
 
-    int maxStep = 3500;
-    int step = 0;
+    int maxStep = 5000;
     private void FixedUpdate()
     {
-        step+=1;
-        if(step >= maxStep)
+        if(this.StepCount >= maxStep)
         {
-            step = 0;
             EndEpisode();
         }
     }

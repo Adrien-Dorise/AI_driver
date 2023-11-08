@@ -8,7 +8,8 @@ TagManager:
   - PNJ
   - Ground
   - Road
-  - Death Floor
+  - Death
+  - Target
   layers:
   - Default
   - TransparentFX
@@ -16,8 +17,8 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
+  - Target
+  - Death
   - 
   - 
   - 
