@@ -21,7 +21,7 @@ public class traffic_light : MonoBehaviour
             {"orange", new Color(255,127,0,255)},
             {"red", Color.red},
         };
-        material = this.GetComponent<Material>();
+        material = this.GetComponent<Renderer>().material;
         current_state = traffic_states.green;
         material.color = traffic_colors["green"];
         last_time = Time.time;
@@ -59,6 +59,7 @@ public class traffic_light : MonoBehaviour
     {
         if(Time.time - last_time >= switch_time)
         {
+            last_time = Time.time;
             state_machine();
         } 
     }

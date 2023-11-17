@@ -18,8 +18,8 @@ public class car_agent : Agent
     void Start () 
     {
         rBody = GetComponent<Rigidbody>();
-        target = trainingPositions.transform.GetChild(0).GetChild(1);
         car_script = this.gameObject.GetComponent<car_controller>();
+        target = trainingPositions.transform.GetChild(0).GetChild(1);
         car_script.isAgent = true;
         lastDistanceToTarget = 10000f;
         positionStep = 0;
