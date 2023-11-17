@@ -9,7 +9,7 @@ using Unity.VisualScripting;
 public class car_agent : Agent
 {
     private Rigidbody rBody;
-    [SerializeField] private Transform target;
+    private Transform target;
     private car_controller car_script;
     [SerializeField] private GameObject trainingPositions;
     [SerializeField] private int positionStep;
@@ -18,7 +18,6 @@ public class car_agent : Agent
     void Start () 
     {
         rBody = GetComponent<Rigidbody>();
-        //trainingPositions = GameObject.Find("Training Positions");
         target = trainingPositions.transform.GetChild(0).GetChild(1);
         car_script = this.gameObject.GetComponent<car_controller>();
         car_script.isAgent = true;
