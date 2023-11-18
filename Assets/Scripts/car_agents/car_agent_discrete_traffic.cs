@@ -1,28 +1,33 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
-using Unity.VisualScripting;
+using System.Collections.ObjectModel;
 
 public class car_agent_discrete_traffic : Agent
 {
     private Rigidbody rBody;
     private Transform target;
     private car_controller car_script;
-    [SerializeField] private GameObject trainingPositions;
-    [SerializeField] private int positionStep;
+    [SerializeField] private GameObject training_position;
+    [SerializeField] private int position_step;
+    private enum situationals {none, traffic_light};
+    [SerializeField] private situationals current_situational;
+    [SerializeField] private GameObject situational_object;
+
 
     private float lastDistanceToTarget;
     void Start () 
     {
+        current_situational = situationals.none;
+        situational_object = null;
         rBody = GetComponent<Rigidbody>();
         car_script = this.gameObject.GetComponent<car_controller>();
-        target = trainingPositions.transform.GetChild(0).GetChild(1);
+        target = training_position.transform.GetChild(0).GetChild(1);
         car_script.isAgent = true;
         lastDistanceToTarget = 10000f;
-        positionStep = 0;
+        position_step = 0;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -73,14 +78,14 @@ public class car_agent_discrete_traffic : Agent
 
     public override void OnEpisodeBegin()
     {
-        positionStep = UnityEngine.Random.Range(0, trainingPositions.transform.childCount);
-        for(int i=0; i<trainingPositions.transform.childCount; i++)
+        position_step = UnityEngine.Random.Range(0, training_position.transform.childCount);
+        for(int i=0; i<training_position.transform.childCount; i++)
         {
-            trainingPositions.transform.GetChild(i).gameObject.SetActive(false);
+            training_position.transform.GetChild(i).gameObject.SetActive(false);
         }
-        Transform startPosition = trainingPositions.transform.GetChild(positionStep).GetChild(0); 
-        trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
-        target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
+        Transform startPosition = training_position.transform.GetChild(position_step).GetChild(0); 
+        training_position.transform.GetChild(position_step).gameObject.SetActive(true);
+        target = training_position.transform.GetChild(position_step).GetChild(1);
 
         //Move car to initial position
         this.rBody.angularVelocity = Vector3.zero;
@@ -90,7 +95,7 @@ public class car_agent_discrete_traffic : Agent
         this.transform.Rotate(new Vector3(0f,90f,0f));
 
         //Move target to initial spot
-        //target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
+        //target.position = training_position.transform.GetChild(position_step).GetChild(1).position;
 
         lastDistanceToTarget = 10000f;
     }
@@ -117,6 +122,29 @@ public class car_agent_discrete_traffic : Agent
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
         sensor.AddObservation(rBody.velocity.z);
+
+        //Situational
+        switch(current_situational)
+        {
+            case situationals.traffic_light:
+                switch(situational_object.GetComponent<traffic_light>().current_state)
+                {
+                    case traffic_light.traffic_states.green:
+                        sensor.AddObservation(1);
+                        break;
+                    case traffic_light.traffic_states.orange:
+                        sensor.AddObservation(2);
+                        break;
+                    case traffic_light.traffic_states.red:
+                        sensor.AddObservation(3);
+                        break;
+                }
+                break;
+            
+            default:
+                sensor.AddObservation(0);
+                break;
+        }
     }
 
     
@@ -169,20 +197,20 @@ public class car_agent_discrete_traffic : Agent
         if (distanceToTarget < 1.42f)
         {
             SetReward(1.0f);
-            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(false);
+            training_position.transform.GetChild(position_step).gameObject.SetActive(false);
             
-            if(positionStep + 1 >= trainingPositions.transform.childCount)
+            if(position_step + 1 >= training_position.transform.childCount)
             {
-                positionStep = 0;
+                position_step = 0;
             }
             else
             {
-                positionStep++;
+                position_step++;
             }
             
-            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
-            target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
-            target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
+            training_position.transform.GetChild(position_step).gameObject.SetActive(true);
+            target = training_position.transform.GetChild(position_step).GetChild(1);
+            target.position = training_position.transform.GetChild(position_step).GetChild(1).position;
         }
         
         if(distanceToTarget < lastDistanceToTarget)
@@ -194,8 +222,36 @@ public class car_agent_discrete_traffic : Agent
             AddReward(-0.00005f);
         }
 
-        lastDistanceToTarget = distanceToTarget;
 
+        float current_speed = Mathf.Abs(rBody.velocity.x) + Mathf.Abs(rBody.velocity.z);
+        switch(current_situational)
+        {
+            case situationals.traffic_light:
+                switch(situational_object.GetComponent<traffic_light>().current_state)
+                {
+                    case traffic_light.traffic_states.green:
+                        if(current_speed <= 5e-2)
+                        {
+                            SetReward(-0.2f);
+                        }
+                        
+                        break;
+                    case traffic_light.traffic_states.orange:
+                    case traffic_light.traffic_states.red:
+                        if(current_speed <= 5e-2)
+                        {
+                            SetReward(0.1f);
+                        }
+                        else
+                        {
+                            SetReward(-0.2f);
+                        }
+                        break;
+                }
+                break;
+        }
+
+        lastDistanceToTarget = distanceToTarget;
         // Fell off platform
         if (this.transform.position.y < 0)
         {
@@ -203,15 +259,30 @@ public class car_agent_discrete_traffic : Agent
         }
 
     }
-
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerStay(Collider other)
     {
         if(other.tag == "Death")
         {
             SetReward(-1f);
             EndEpisode();
         }
+        else if(other.tag == "Traffic_light")
+        {
+            current_situational = situationals.traffic_light;
+            situational_object = other.transform.parent.gameObject;
+        }
     }
+
+
+    private void OnTriggerExit(Collider other)
+    {
+        if(other.tag == "Traffic_light")
+        {
+            current_situational = situationals.none;
+            situational_object = null;
+        }
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
         if(collision.transform.tag == "Death")
@@ -221,9 +292,23 @@ public class car_agent_discrete_traffic : Agent
         }
     }
 
+
+    
     int maxStep = 5000;
+    ReadOnlyCollection<float> observations;
+    [SerializeField] List<float> obs = new List<float>();
     private void FixedUpdate()
     {
+        observations = this.GetObservations();
+        if(observations.Count > 0)
+        {
+            obs.Clear();
+            foreach(float o in observations)
+            {
+                obs.Add(o);
+            }
+
+        }
         if(this.StepCount >= maxStep)
         {
             EndEpisode();

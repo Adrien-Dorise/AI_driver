@@ -9,7 +9,7 @@ public class training_informations : MonoBehaviour
 
     [SerializeField] GameObject car_agent;
     private car_controller car_script;
-    private car_agent agent_script;
+    [SerializeField] private car_agent_discrete_traffic agent_script;
     private string debug_text;
     [SerializeField] List<float> observations = new List<float>();
 
@@ -18,9 +18,7 @@ public class training_informations : MonoBehaviour
     void Start()
     {
         car_script = car_agent.GetComponent<car_controller>();
-        agent_script = car_agent.GetComponent<car_agent>();
-
-
+        agent_script = car_agent.GetComponent<car_agent_discrete_traffic>();
     }
 
 
