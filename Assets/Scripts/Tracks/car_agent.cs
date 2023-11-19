@@ -43,7 +43,32 @@ public class car_agent : Agent
             discreteActionsOut[0] = 0;
         }
 
-        
+        if(Input.GetAxis("Horizontal") == 0)
+        {
+            discreteActionsOut[1] = 0;
+        }
+        else if(Input.GetAxis("Horizontal") > 0)
+        {
+            discreteActionsOut[1] = 1;
+        }
+        else if(Input.GetAxis("Horizontal") < 0)
+        {
+            discreteActionsOut[1] = 2;
+        }
+         
+        if(Input.GetAxis("Vertical") == 0)
+        {
+            discreteActionsOut[2] = 0;
+        }
+        else if(Input.GetAxis("Vertical") > 0)
+        {
+            discreteActionsOut[2] = 1;
+        }
+        else if(Input.GetAxis("Vertical") < 0)
+        {
+            discreteActionsOut[2] = 2;
+        }
+       
         
     }
 
@@ -62,7 +87,8 @@ public class car_agent : Agent
         this.rBody.angularVelocity = Vector3.zero;
         this.rBody.velocity = Vector3.zero;
         this.transform.position = startPosition.position;
-        this.transform.rotation = startPosition.localRotation;
+        this.transform.rotation = startPosition.parent.localRotation;
+        this.transform.Rotate(new Vector3(0f,90f,0f));
 
         //Move target to initial spot
         //target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
@@ -105,7 +131,7 @@ public class car_agent : Agent
         {
             car_script.isBreaking = true;
         }
-        else
+        else if(actionBuffers.DiscreteActions[0] == 0)
         {
             car_script.isBreaking = false;
         }
