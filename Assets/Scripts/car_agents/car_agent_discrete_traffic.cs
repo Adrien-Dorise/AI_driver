@@ -11,10 +11,10 @@ public class car_agent_discrete_traffic : Agent
     private Transform target;
     private car_controller car_script;
     [SerializeField] private GameObject training_position;
-    [SerializeField] private int position_step;
+    private int position_step;
     private enum situationals {none, traffic_light};
-    [SerializeField] private situationals current_situational;
-    [SerializeField] private GameObject situational_object;
+    private situationals current_situational;
+    private GameObject situational_object;
 
 
     private float lastDistanceToTarget;
