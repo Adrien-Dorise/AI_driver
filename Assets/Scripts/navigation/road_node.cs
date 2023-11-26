@@ -5,7 +5,7 @@ using UnityEngine;
 public class road_node : MonoBehaviour
 {
     //connected_road variable is to set in the editor
-    private List<GameObject> connected_road;
+    public List<GameObject> connected_road;
 
     // Start is called before the first frame update
     void Start()
