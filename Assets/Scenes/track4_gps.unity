@@ -2801,6 +2801,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Debug Training
       objectReference: {fileID: 0}
+    - target: {fileID: 6903785846634328728, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
+      propertyPath: m_FontSize
+      value: 45
+      objectReference: {fileID: 0}
     - target: {fileID: 6926230794321810818, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
       propertyPath: car_agent
       value: 
@@ -2840,6 +2844,18 @@ PrefabInstance:
     - target: {fileID: 7162911326458423103, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
       propertyPath: m_SizeDelta.y
       value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 7162911326458423103, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7162911326458423103, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7162911326458423103, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7162911326458423103, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
       propertyPath: m_LocalPosition.x
