@@ -17,7 +17,7 @@ public class road_node : MonoBehaviour
     {
         if(other.tag == "Navigation_node")
         {
-            connected_road.Add(other.gameObject);
+            connected_road.Add(other.gameObject.transform.parent.gameObject);
         }
     }
 

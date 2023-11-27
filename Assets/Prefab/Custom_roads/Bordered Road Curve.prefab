@@ -556,7 +556,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5543829929296674622}
-  - component: {fileID: 1182901011021699043}
+  - component: {fileID: 8754559146619020027}
   - component: {fileID: 8117686786725840049}
   m_Layer: 10
   m_Name: Navigation Nodes
@@ -582,7 +582,7 @@ Transform:
   - {fileID: 5399623811429279052}
   m_Father: {fileID: 3112426290903705521}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1182901011021699043
+--- !u!114 &8754559146619020027
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -591,10 +591,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 6700001193658715657}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f425b732b7a11d49ba45892b1a02dc1, type: 3}
+  m_Script: {fileID: 11500000, guid: 6d9fa1b838e9f4148a536052470bd139, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  connectedRoad: []
+  connected_road: []
 --- !u!54 &8117686786725840049
 Rigidbody:
   m_ObjectHideFlags: 0
