@@ -5,6 +5,7 @@ using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 using System.Collections.ObjectModel;
 using Unity.VisualScripting;
+using System.Linq.Expressions;
 
 public class car_agent_discrete_navigation : Agent
 {
@@ -25,7 +26,6 @@ public class car_agent_discrete_navigation : Agent
         rBody = GetComponent<Rigidbody>();
         car_script = this.gameObject.GetComponent<car_controller>();
         nav_script = GameObject.Find("Navigation").GetComponent<navigation>();
-        target = nav_script.start_point.transform;
         car_script.isAgent = true;
         lastDistanceToTarget = 10000f;
         position_step = 0;
@@ -79,6 +79,7 @@ public class car_agent_discrete_navigation : Agent
 
     public override void OnEpisodeBegin()
     {
+        nav_script.set_random_trip();
         if(nav_script.activate_navigation(nav_script.start_point, nav_script.end_point) == -1)
         {
             EndEpisode();
@@ -90,9 +91,8 @@ public class car_agent_discrete_navigation : Agent
         this.rBody.angularVelocity = Vector3.zero;
         this.rBody.velocity = Vector3.zero;
         this.transform.position = startPosition.position;
-        Debug.Log(startPosition.parent.parent.gameObject.name);
-        this.transform.rotation = startPosition.localRotation;
-        this.transform.Rotate(new Vector3(0f,90f,0f));
+        this.transform.rotation = startPosition.rotation;
+        this.transform.Rotate(new Vector3(0f,180f,0f));
 
         //Move target to initial spot
         //target.position = nav_script.active_target.transform.GetChild(position_step).GetChild(1).position;
@@ -114,7 +114,14 @@ public class car_agent_discrete_navigation : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
-        sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+        try{
+            sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+        }
+        catch
+        {
+            sensor.AddObservation(distanceVector(this.transform, this.transform)); //3 observations
+            Debug.LogWarning("No target position found. Replaced with null vector3");            
+        }
         //sensor.AddObservation(target.position); // 3 observations
         //sensor.AddObservation(this.transform.position); // 3 observations
 

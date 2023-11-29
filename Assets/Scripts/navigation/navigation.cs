@@ -4,10 +4,11 @@ using UnityEngine;
 
 public class navigation : MonoBehaviour
 {
-    [SerializeField] public GameObject start_point, end_point;
-    [SerializeField] List<GameObject> paths;
-    [SerializeField] bool debug_calculate_navigation;
-    [SerializeField] NavigationGraph game_graph;
+    public GameObject start_point, end_point;
+    [SerializeField] private List<GameObject> paths;
+    [SerializeField] private bool debug_calculate_navigation;
+    private NavigationGraph game_graph;
+    [HideInInspector] public List<GameObject> roads;
     private bool is_init_done;
     public GameObject active_target;
  
@@ -17,6 +18,10 @@ public class navigation : MonoBehaviour
         debug_calculate_navigation = false;
         is_init_done = false;
         active_target = null;
+        foreach(GameObject r in GameObject.FindGameObjectsWithTag("Road"))
+        {
+            roads.Add(r);
+        }
     }
 
     private class Node
@@ -154,12 +159,11 @@ public class navigation : MonoBehaviour
     {
         if(!is_init_done)
         {return -1;}
-        
         game_graph = new NavigationGraph(start_point,end_point);
         if(game_graph.findPath())
         {
-            game_graph.current_node.road.transform.Find("Target Road").gameObject.SetActive(true);
             active_target = game_graph.current_node.road.transform.Find("Target Road").gameObject;
+            activate_only_current_target();
             return 0;
         }
         return -1;
@@ -167,12 +171,11 @@ public class navigation : MonoBehaviour
 
     public void activate_next_node()
     {
-        game_graph.current_node.road.transform.Find("Target Road").gameObject.SetActive(false);
         if(game_graph.current_node.next_node != null)
         {
             game_graph.current_node = game_graph.current_node.next_node;
-            game_graph.current_node.road.transform.Find("Target Road").gameObject.SetActive(true);
             active_target = game_graph.current_node.road.transform.Find("Target Road").gameObject;
+            activate_only_current_target();
         }
     }
 
@@ -192,6 +195,32 @@ public class navigation : MonoBehaviour
 
     }
 
+    private void activate_only_current_target()
+    {
+        foreach(GameObject r in roads)
+        { 
+            bool is_to_activate = Object.ReferenceEquals(game_graph.current_node.road, r);
+            r.transform.Find("Target Road").gameObject.SetActive(is_to_activate);
+        }
+    }
+
+    public void set_random_trip()
+    {
+        int safeguard = 0;
+        int start_indice, target_indice;
+        start_indice = Random.Range(0,roads.Count);
+        target_indice = Random.Range(0,roads.Count);
+        while(target_indice == start_indice)
+        {
+            target_indice = Random.Range(0,roads.Count);
+
+            if(safeguard > 100){break;}
+            safeguard++;
+        }
+        start_point = roads[start_indice];
+        end_point = roads[target_indice];
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -203,6 +232,7 @@ public class navigation : MonoBehaviour
 
         if(debug_calculate_navigation && is_init_done)
         {
+            set_random_trip();
             game_graph = new NavigationGraph(start_point,end_point);
             if(game_graph.findPath())
             {
