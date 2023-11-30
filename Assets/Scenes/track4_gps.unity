@@ -1421,6 +1421,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f425b732b7a11d49ba45892b1a02dc1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gym: {fileID: 1008913493569499852}
   start_point: {fileID: 0}
   end_point: {fileID: 0}
   paths: []
@@ -1435,12 +1436,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1450534440}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 132.23816, y: -91.15733, z: -146.51765}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 34.73816, y: -84.112, z: -56.517654}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 2251337057596110110}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1467271978
 PrefabInstance:
@@ -2459,6 +2460,7 @@ Transform:
   - {fileID: 8359682181164158682}
   - {fileID: 4986255899019481281}
   - {fileID: 974652298}
+  - {fileID: 1450534442}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!146 &2314190595016018122
@@ -3405,4 +3407,3 @@ SceneRoots:
   - {fileID: 2251337057596110110}
   - {fileID: 685734850}
   - {fileID: 1837815795}
-  - {fileID: 1450534442}

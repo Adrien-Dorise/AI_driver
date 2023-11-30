@@ -6,6 +6,8 @@ using Unity.MLAgents.Actuators;
 using System.Collections.ObjectModel;
 using Unity.VisualScripting;
 using System.Linq.Expressions;
+using System.Collections;
+using UnityEngine.Animations;
 
 public class car_agent_discrete_navigation : Agent
 {
@@ -25,7 +27,7 @@ public class car_agent_discrete_navigation : Agent
         situational_object = null;
         rBody = GetComponent<Rigidbody>();
         car_script = this.gameObject.GetComponent<car_controller>();
-        nav_script = GameObject.Find("Navigation").GetComponent<navigation>();
+        nav_script = this.transform.parent.GetComponentInChildren<navigation>();
         car_script.isAgent = true;
         lastDistanceToTarget = 10000f;
         position_step = 0;
@@ -199,15 +201,7 @@ public class car_agent_discrete_navigation : Agent
 
         // Rewards
         float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
-
-        // Reached target
-        if (distanceToTarget < 1.42f)
-        {
-            SetReward(1.0f);
-            nav_script.activate_next_node();
-            target = nav_script.active_target.transform.GetChild(1);
-        }
-        
+              
         if(distanceToTarget < lastDistanceToTarget)
         {
             AddReward(0.00001f);
@@ -256,7 +250,22 @@ public class car_agent_discrete_navigation : Agent
     }
     private void OnTriggerStay(Collider other)
     {
-        if(other.tag == "Death")
+        
+        if(other.tag == "Target")
+        {
+            SetReward(1.0f);
+            if(nav_script.activate_next_node() == 0) //No nodes left
+            {
+                EndEpisode();
+            }
+            try{
+            target = nav_script.active_target.transform.GetChild(1);
+            }
+            catch{
+                Debug.LogWarning("No target available");
+            }
+        }
+        else if(other.tag == "Death")
         {
             SetReward(-1f);
             EndEpisode();
@@ -303,6 +312,7 @@ public class car_agent_discrete_navigation : Agent
                 obs.Add(o);
             }
         }
+
         if(this.StepCount >= maxStep)
         {
             EndEpisode();

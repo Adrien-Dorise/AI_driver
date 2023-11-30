@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class navigation : MonoBehaviour
@@ -18,9 +19,12 @@ public class navigation : MonoBehaviour
         debug_calculate_navigation = false;
         is_init_done = false;
         active_target = null;
-        foreach(GameObject r in GameObject.FindGameObjectsWithTag("Road"))
+        foreach(Transform child in this.transform.parent.GetComponentsInChildren<Transform>())
         {
-            roads.Add(r);
+            if(child.tag == "Road")
+            {
+                roads.Add(child.gameObject);
+            }
         }
     }
 
@@ -62,18 +66,20 @@ public class navigation : MonoBehaviour
     {
         public List<Node> nodes, path;
         public Node current_node;
+        public int nodes_left;
         private GameObject start_point, end_point;
         private int max_safeguard = 500, safeguard;
         private bool found_path;
 
         public NavigationGraph(GameObject start_point, GameObject end_point)
         {
-            nodes = new List<Node>();
-            path = new List<Node>();
+            this.nodes = new List<Node>();
+            this.path = new List<Node>();
             this.start_point = start_point;
             this.end_point = end_point;
-            found_path = false;
-            safeguard = 0;
+            this.nodes_left = 0;
+            this.found_path = false;
+            this.safeguard = 0;
 
             this.current_node = new Node(null, start_point, start_point, end_point);
             this.current_node.set_visited();
@@ -120,7 +126,7 @@ public class navigation : MonoBehaviour
             }
             path.Add(current_node);
             path.Reverse();
-
+            nodes_left = path.Count;
             return this.found_path;
         }
         
@@ -152,7 +158,6 @@ public class navigation : MonoBehaviour
             }
             return next_noad;
         }
-
     }
 
     public int activate_navigation(GameObject start_point, GameObject end_point)
@@ -169,14 +174,29 @@ public class navigation : MonoBehaviour
         return -1;
     }
 
-    public void activate_next_node()
+    /// <summary>
+    /// Activate the next node on the route.
+    /// </summary>
+    /// <returns> Returns the number of node left in the route </returns>
+    public int activate_next_node()
     {
+        if(!is_init_done)
+        {
+            return -1;
+        }
+
         if(game_graph.current_node.next_node != null)
         {
             game_graph.current_node = game_graph.current_node.next_node;
             active_target = game_graph.current_node.road.transform.Find("Target Road").gameObject;
             activate_only_current_target();
         }
+        if(game_graph.nodes_left>0)
+        {
+            game_graph.nodes_left--;
+        }
+        
+        return game_graph.nodes_left;
     }
 
     IEnumerator path_animation(List<GameObject> path)
