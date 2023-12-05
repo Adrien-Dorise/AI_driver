@@ -4,15 +4,12 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 using System.Collections.ObjectModel;
-using Unity.VisualScripting;
-using System.Linq.Expressions;
-using System.Collections;
-using UnityEngine.Animations;
+using UnityEditor;
 
 public class car_agent_discrete_navigation : Agent
 {
     private Rigidbody rBody;
-    private Transform target;
+    [SerializeField] private Transform target;
     private car_controller car_script;
     private int position_step;
     private enum situationals {none, traffic_light};
@@ -87,41 +84,61 @@ public class car_agent_discrete_navigation : Agent
             EndEpisode();
         }
         Transform startPosition = nav_script.active_target.transform.GetChild(0); 
+        
+        if(nav_script.activate_next_node() == 0) //No nodes left
+        {
+            EndEpisode();
+        }
         target = nav_script.active_target.transform.GetChild(1);
 
         //Move car to initial position
         this.rBody.angularVelocity = Vector3.zero;
         this.rBody.velocity = Vector3.zero;
         this.transform.position = startPosition.position;
+        this.transform.position += new Vector3(0f,-0.5f,0f);
         this.transform.rotation = startPosition.rotation;
-        this.transform.Rotate(new Vector3(0f,180f,0f));
+        
+        if(Vector3.Dot(distanceVector3(target,this.transform).normalized, this.transform.forward) < 0)
+        {
+            this.transform.Rotate(new Vector3(0f,180f,0f));
+        }
 
         //Move target to initial spot
         //target.position = nav_script.active_target.transform.GetChild(position_step).GetChild(1).position;
 
+        
         lastDistanceToTarget = 10000f;
     }
 
 
-    private Vector3 distanceVector(Transform object1, Transform object2)
+    private Vector3 distanceVector3(Transform object1, Transform object2)
     {
         float x, y, z;
 
         x = object1.transform.position.x - object2.transform.position.x;
         y = object1.transform.position.y - object2.transform.position.y;
         z = object1.transform.position.z - object2.transform.position.z;
-        return new Vector3(x, y, z) / 50 ;
+        return new Vector3(x, y, z);
+    }
+
+    private Vector2 distanceVector2(Transform object1, Transform object2)
+    {
+        float x, z;
+
+        x = object1.transform.position.x - object2.transform.position.x;
+        z = object1.transform.position.z - object2.transform.position.z;
+        return new Vector2(x, z);
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
         try{
-            sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+            sensor.AddObservation(distanceVector3(this.transform, target)); //3 observations
         }
         catch
         {
-            sensor.AddObservation(distanceVector(this.transform, this.transform)); //3 observations
+            sensor.AddObservation(distanceVector3(this.transform, this.transform)); //3 observations
             Debug.LogWarning("No target position found. Replaced with null vector3");            
         }
         //sensor.AddObservation(target.position); // 3 observations

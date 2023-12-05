@@ -2182,11 +2182,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_MaxRayDegrees
-      value: 180
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_RaysPerDirection
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_RayLayerMask.m_Bits
