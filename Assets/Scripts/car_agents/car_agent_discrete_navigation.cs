@@ -225,7 +225,7 @@ public class car_agent_discrete_navigation : Agent
         }
         else
         {
-            AddReward(-0.00005f);
+            AddReward(-0.005f);
         }
 
 

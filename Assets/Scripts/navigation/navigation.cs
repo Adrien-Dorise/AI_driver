@@ -136,7 +136,7 @@ public class navigation : MonoBehaviour
             foreach(GameObject r in node.connections)
             {
                 if(this.safeguard > this.max_safeguard){break;}
-                safeguard++;
+                this.safeguard++;
                 
                 if(found_path){break;}
 
@@ -159,6 +159,8 @@ public class navigation : MonoBehaviour
             return next_noad;
         }
     }
+
+    
 
     public int activate_navigation(GameObject start_point, GameObject end_point)
     {
@@ -201,6 +203,12 @@ public class navigation : MonoBehaviour
 
     IEnumerator path_animation(List<GameObject> path)
     {
+        
+        foreach(GameObject road in roads)
+        {
+            road.transform.Find("Target Road").gameObject.SetActive(false);  
+        }
+        
         foreach(GameObject road in path)
         {
             road.transform.Find("Target Road").gameObject.SetActive(true);  

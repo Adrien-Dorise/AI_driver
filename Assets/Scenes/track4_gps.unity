@@ -123,6 +123,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &40482990 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1482123602976213427, guid: a82c1d8bfb3bd1747a66a79ab3601ce9, type: 3}
+  m_PrefabInstance: {fileID: 1078766514}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &148077239
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -134,6 +139,10 @@ PrefabInstance:
     - target: {fileID: 171770, guid: bc29e381fcdc53a4895b7be6dedf3eea, type: 3}
       propertyPath: m_Name
       value: Bordered Road Join Road
+      objectReference: {fileID: 0}
+    - target: {fileID: 171770, guid: bc29e381fcdc53a4895b7be6dedf3eea, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 456242, guid: bc29e381fcdc53a4895b7be6dedf3eea, type: 3}
       propertyPath: m_LocalPosition.x
@@ -664,6 +673,10 @@ PrefabInstance:
     - target: {fileID: 1482123602976213427, guid: a82c1d8bfb3bd1747a66a79ab3601ce9, type: 3}
       propertyPath: m_Name
       value: Bordered Road Straight (5)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1482123602976213427, guid: a82c1d8bfb3bd1747a66a79ab3601ce9, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6331602906522553047, guid: a82c1d8bfb3bd1747a66a79ab3601ce9, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1421,7 +1434,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f425b732b7a11d49ba45892b1a02dc1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  start_point: {fileID: 0}
+  start_point: {fileID: 40482990}
   end_point: {fileID: 0}
   paths: []
   debug_calculate_navigation: 0
@@ -2182,19 +2195,39 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_MaxRayDegrees
-      value: 90
+      value: 180
       objectReference: {fileID: 0}
     - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_RaysPerDirection
-      value: 3
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
+      propertyPath: m_AlternatingRayOrder
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_RayLayerMask.m_Bits
-      value: 4294965640
+      value: 4294965704
+      objectReference: {fileID: 0}
+    - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
+      propertyPath: m_DetectableTags.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1317982944207939836, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
+      propertyPath: m_DetectableTags.Array.data[2]
+      value: Target
       objectReference: {fileID: 0}
     - target: {fileID: 2513180512285899746, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: training_position
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5407903451281975841, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
+      propertyPath: m_Model
+      value: 
+      objectReference: {fileID: 5022602860645237092, guid: c701c7915832bbe41897a9c2184e4695, type: 3}
+    - target: {fileID: 5407903451281975841, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
+      propertyPath: m_BehaviorType
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7475420110279583332, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2239,6 +2272,10 @@ PrefabInstance:
     - target: {fileID: 8816962534406939906, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
       propertyPath: m_Name
       value: Car Agent Discrete Navigation
+      objectReference: {fileID: 0}
+    - target: {fileID: 8816962534406939906, guid: 1324f2723d6d72242b09f65cafe75933, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2853,6 +2890,10 @@ PrefabInstance:
     - target: {fileID: 3403489251081199226, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
       propertyPath: m_Name
       value: Debug Training
+      objectReference: {fileID: 0}
+    - target: {fileID: 3403489251081199226, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6903785846634328728, guid: 37dec5fdd8809ee45a37d6304cb8446b, type: 3}
       propertyPath: m_FontSize
