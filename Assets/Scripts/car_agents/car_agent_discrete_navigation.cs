@@ -4,18 +4,18 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 using System.Collections.ObjectModel;
+using UnityEditor;
 
-public class car_agent_discrete_traffic : Agent
+public class car_agent_discrete_navigation : Agent
 {
     private Rigidbody rBody;
-    private Transform target;
+    [SerializeField] private Transform target;
     private car_controller car_script;
-    [SerializeField] private GameObject training_position;
     private int position_step;
     private enum situationals {none, traffic_light};
     private situationals current_situational;
     private GameObject situational_object;
-
+    private navigation nav_script; 
 
     private float lastDistanceToTarget;
     void Start () 
@@ -24,7 +24,7 @@ public class car_agent_discrete_traffic : Agent
         situational_object = null;
         rBody = GetComponent<Rigidbody>();
         car_script = this.gameObject.GetComponent<car_controller>();
-        target = training_position.transform.GetChild(0).GetChild(1);
+        nav_script = this.transform.parent.GetComponentInChildren<navigation>();
         car_script.isAgent = true;
         lastDistanceToTarget = 10000f;
         position_step = 0;
@@ -78,43 +78,69 @@ public class car_agent_discrete_traffic : Agent
 
     public override void OnEpisodeBegin()
     {
-        position_step = UnityEngine.Random.Range(0, training_position.transform.childCount);
-        for(int i=0; i<training_position.transform.childCount; i++)
+        nav_script.set_random_trip();
+        if(nav_script.activate_navigation(nav_script.start_point, nav_script.end_point) == -1)
         {
-            training_position.transform.GetChild(i).gameObject.SetActive(false);
+            EndEpisode();
         }
-        Transform startPosition = training_position.transform.GetChild(position_step).GetChild(0); 
-        training_position.transform.GetChild(position_step).gameObject.SetActive(true);
-        target = training_position.transform.GetChild(position_step).GetChild(1);
+        Transform startPosition = nav_script.active_target.transform.GetChild(0); 
+        
+        if(nav_script.activate_next_node() == 0) //No nodes left
+        {
+            EndEpisode();
+        }
+        target = nav_script.active_target.transform.GetChild(1);
 
         //Move car to initial position
         this.rBody.angularVelocity = Vector3.zero;
         this.rBody.velocity = Vector3.zero;
         this.transform.position = startPosition.position;
-        this.transform.rotation = startPosition.parent.localRotation;
-        this.transform.Rotate(new Vector3(0f,90f,0f));
+        this.transform.position += new Vector3(0f,-0.5f,0f);
+        this.transform.rotation = startPosition.rotation;
+        
+        if(Vector3.Dot(distanceVector3(target,this.transform).normalized, this.transform.forward) < 0)
+        {
+            this.transform.Rotate(new Vector3(0f,180f,0f));
+        }
 
         //Move target to initial spot
-        //target.position = training_position.transform.GetChild(position_step).GetChild(1).position;
+        //target.position = nav_script.active_target.transform.GetChild(position_step).GetChild(1).position;
 
+        
         lastDistanceToTarget = 10000f;
     }
 
 
-    private Vector3 distanceVector(Transform object1, Transform object2)
+    private Vector3 distanceVector3(Transform object1, Transform object2)
     {
         float x, y, z;
 
         x = object1.transform.position.x - object2.transform.position.x;
         y = object1.transform.position.y - object2.transform.position.y;
         z = object1.transform.position.z - object2.transform.position.z;
-        return new Vector3(x, y, z) / 50 ;
+        return new Vector3(x, y, z);
+    }
+
+    private Vector2 distanceVector2(Transform object1, Transform object2)
+    {
+        float x, z;
+
+        x = object1.transform.position.x - object2.transform.position.x;
+        z = object1.transform.position.z - object2.transform.position.z;
+        return new Vector2(x, z);
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
-        sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+        try{
+            sensor.AddObservation(distanceVector3(this.transform, target)); //3 observations
+        }
+        catch
+        {
+            sensor.AddObservation(distanceVector3(this.transform, this.transform)); //3 observations
+            Debug.LogWarning("No target position found. Replaced with null vector3");            
+        }
         //sensor.AddObservation(target.position); // 3 observations
         //sensor.AddObservation(this.transform.position); // 3 observations
 
@@ -192,34 +218,14 @@ public class car_agent_discrete_traffic : Agent
 
         // Rewards
         float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
-
-        // Reached target
-        if (distanceToTarget < 1.42f)
-        {
-            SetReward(1.0f);
-            training_position.transform.GetChild(position_step).gameObject.SetActive(false);
-            
-            if(position_step + 1 >= training_position.transform.childCount)
-            {
-                position_step = 0;
-            }
-            else
-            {
-                position_step++;
-            }
-            
-            training_position.transform.GetChild(position_step).gameObject.SetActive(true);
-            target = training_position.transform.GetChild(position_step).GetChild(1);
-            target.position = training_position.transform.GetChild(position_step).GetChild(1).position;
-        }
-        
+              
         if(distanceToTarget < lastDistanceToTarget)
         {
             AddReward(0.00001f);
         }
         else
         {
-            AddReward(-0.00005f);
+            AddReward(-0.005f);
         }
 
 
@@ -261,7 +267,22 @@ public class car_agent_discrete_traffic : Agent
     }
     private void OnTriggerStay(Collider other)
     {
-        if(other.tag == "Death")
+        
+        if(other.tag == "Target")
+        {
+            SetReward(1.0f);
+            if(nav_script.activate_next_node() == 0) //No nodes left
+            {
+                EndEpisode();
+            }
+            try{
+            target = nav_script.active_target.transform.GetChild(1);
+            }
+            catch{
+                Debug.LogWarning("No target available");
+            }
+        }
+        else if(other.tag == "Death")
         {
             SetReward(-1f);
             EndEpisode();
@@ -307,8 +328,8 @@ public class car_agent_discrete_traffic : Agent
             {
                 obs.Add(o);
             }
-
         }
+
         if(this.StepCount >= maxStep)
         {
             EndEpisode();

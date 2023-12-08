@@ -18,7 +18,7 @@ public class traffic_light : MonoBehaviour
 
         traffic_colors = new Dictionary<string, Color>(){
             {"green", Color.green},
-            {"orange", new Color(255,127,0,255)},
+            {"orange", new Color(1f,0.5f,0f,1f)},
             {"red", Color.red},
         };
         material = new Material[2] {

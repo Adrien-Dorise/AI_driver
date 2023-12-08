@@ -11,6 +11,7 @@ TagManager:
   - Death
   - Target
   - Traffic_light
+  - Navigation_node
   layers:
   - Default
   - TransparentFX
@@ -21,8 +22,8 @@ TagManager:
   - Target
   - Death
   - Situational
-  - 
-  - 
+  - Road
+  - Navigation_node
   - 
   - 
   - 
