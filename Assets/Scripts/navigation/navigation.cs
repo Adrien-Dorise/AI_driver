@@ -9,7 +9,7 @@ public class navigation : MonoBehaviour
     [SerializeField] private List<GameObject> paths;
     [SerializeField] private bool debug_calculate_navigation;
     private NavigationGraph game_graph;
-    [HideInInspector] public List<GameObject> roads;
+     public List<GameObject> roads;
     private bool is_init_done;
     public GameObject active_target;
  
@@ -271,6 +271,7 @@ public class navigation : MonoBehaviour
                 {
                     paths.Add(game_graph.get_road_from_node(n));
                 }
+                Debug.Log(paths[0]);
                 StartCoroutine(path_animation(paths));
             }
         }
