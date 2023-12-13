@@ -4,7 +4,6 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 using System.Collections.ObjectModel;
-using UnityEditor;
 
 public class car_agent_discrete_navigation : Agent
 {

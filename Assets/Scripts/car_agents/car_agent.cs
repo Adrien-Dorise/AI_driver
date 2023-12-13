@@ -1,17 +1,21 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 
-public class car_agent_discrete : Agent
+public class car_agent : Agent
 {
     private Rigidbody rBody;
     private Transform target;
     private car_controller car_script;
     [SerializeField] private GameObject trainingPositions;
+    private float lastDistanceToTarget;    
     [SerializeField] private int positionStep;
 
-    private float lastDistanceToTarget;
+    enum RewardType {}
+
     void Start () 
     {
         rBody = GetComponent<Rigidbody>();
@@ -27,9 +31,6 @@ public class car_agent_discrete : Agent
         var continuousActionsOut = actionsOut.ContinuousActions;
         var discreteActionsOut = actionsOut.DiscreteActions;
         
-        //continuousActionsOut[0] = Input.GetAxis("Horizontal");
-        //continuousActionsOut[1] = Input.GetAxis("Vertical");
-
         if(Input.GetKey(KeyCode.Space))
         {
             discreteActionsOut[0] = 1;
@@ -68,16 +69,32 @@ public class car_agent_discrete : Agent
         
     }
 
-    public override void OnEpisodeBegin()
+    protected virtual void _onEpisodeBegin()
     {
-        positionStep = UnityEngine.Random.Range(0, trainingPositions.transform.childCount);
         for(int i=0; i<trainingPositions.transform.childCount; i++)
         {
             trainingPositions.transform.GetChild(i).gameObject.SetActive(false);
         }
-        Transform startPosition = trainingPositions.transform.GetChild(positionStep).GetChild(0); 
+        positionStep = Random.Range(0, trainingPositions.transform.childCount);
         trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
-        target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
+    }
+
+    protected virtual Transform _getTarget()
+    {
+        return trainingPositions.transform.GetChild(positionStep).GetChild(1);
+    }
+
+    protected virtual Transform _getStart()
+    {
+        return trainingPositions.transform.GetChild(positionStep).GetChild(0); 
+    }
+
+
+    public override void OnEpisodeBegin()
+    {
+        _onEpisodeBegin();
+        Transform startPosition = _getStart();
+        target = _getTarget();
 
         //Move car to initial position
         this.rBody.angularVelocity = Vector3.zero;
@@ -100,66 +117,22 @@ public class car_agent_discrete : Agent
         x = object1.transform.position.x - object2.transform.position.x;
         y = object1.transform.position.y - object2.transform.position.y;
         z = object1.transform.position.z - object2.transform.position.z;
-        return new Vector3(x, y, z) / 50 ;
+        return new Vector3(x, y, z);
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
         sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
-        //sensor.AddObservation(target.position); // 3 observations
-        //sensor.AddObservation(this.transform.position); // 3 observations
-
 
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
         sensor.AddObservation(rBody.velocity.z);
     }
 
-    
-    public override void OnActionReceived(ActionBuffers actionBuffers)
+    protected virtual void _rewards()
     {
-        // Actions, size = 2
-        //car_script.horizontalInput = actionBuffers.ContinuousActions[0];
-        //car_script.verticalInput = actionBuffers.ContinuousActions[1];
-
-        if(actionBuffers.DiscreteActions[0] == 1)
-        {
-            car_script.isBreaking = true;
-        }
-        else if(actionBuffers.DiscreteActions[0] == 0)
-        {
-            car_script.isBreaking = false;
-        }
-
-        if(actionBuffers.DiscreteActions[1] == 0)
-        {
-            car_script.horizontalInput = 0;
-        }
-        else if(actionBuffers.DiscreteActions[1] == 1)
-        {
-            car_script.horizontalInput = 1;
-        }
-        else if(actionBuffers.DiscreteActions[1] == 2)
-        {
-            car_script.horizontalInput = -1;
-        }
-
-        if(actionBuffers.DiscreteActions[2] == 0)
-        {
-            car_script.verticalInput = 0;
-        }
-        else if(actionBuffers.DiscreteActions[2] == 1)
-        {
-            car_script.verticalInput = 1;
-        }
-        else if(actionBuffers.DiscreteActions[2] == 2)
-        {
-            car_script.verticalInput = -1;
-        }
-
-
-        // Rewards
+         // Rewards
         float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
 
         // Reached target
@@ -198,6 +171,55 @@ public class car_agent_discrete : Agent
         {
             EndEpisode();
         }
+    } 
+
+    
+    public override void OnActionReceived(ActionBuffers actionBuffers)
+    {
+        // Actions, size = 2
+        //car_script.horizontalInput = actionBuffers.ContinuousActions[0];
+        //car_script.verticalInput = actionBuffers.ContinuousActions[1];
+
+        //Break
+        if(actionBuffers.DiscreteActions[0] == 1)
+        {
+            car_script.isBreaking = true;
+        }
+        else if(actionBuffers.DiscreteActions[0] == 0)
+        {
+            car_script.isBreaking = false;
+        }
+
+        //Horizontal
+        if(actionBuffers.DiscreteActions[1] == 0)
+        {
+            car_script.horizontalInput = 0;
+        }
+        else if(actionBuffers.DiscreteActions[1] == 1)
+        {
+            car_script.horizontalInput = 1;
+        }
+        else if(actionBuffers.DiscreteActions[1] == 2)
+        {
+            car_script.horizontalInput = -1;
+        }
+
+        //Vertical
+        if(actionBuffers.DiscreteActions[2] == 0)
+        {
+            car_script.verticalInput = 0;
+        }
+        else if(actionBuffers.DiscreteActions[2] == 1)
+        {
+            car_script.verticalInput = 1;
+        }
+        else if(actionBuffers.DiscreteActions[2] == 2)
+        {
+            car_script.verticalInput = -1;
+        }
+
+
+       _rewards();
 
     }
 
