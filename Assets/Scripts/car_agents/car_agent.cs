@@ -7,12 +7,12 @@ using Unity.MLAgents.Actuators;
 
 public class car_agent : Agent
 {
-    private Rigidbody rBody;
-    private Transform target;
-    private car_controller car_script;
-    [SerializeField] private GameObject trainingPositions;
-    private float lastDistanceToTarget;    
-    [SerializeField] private int positionStep;
+    protected Rigidbody rBody;
+    protected Transform target;
+    protected car_controller car_script;
+    [SerializeField] protected GameObject trainingPositions;
+    protected float lastDistanceToTarget;    
+    [SerializeField] protected int positionStep;
 
     enum RewardType {}
 
@@ -65,29 +65,13 @@ public class car_agent : Agent
         {
             discreteActionsOut[2] = 2;
         }
-       
-        
     }
 
-    protected virtual void _onEpisodeBegin()
-    {
-        for(int i=0; i<trainingPositions.transform.childCount; i++)
-        {
-            trainingPositions.transform.GetChild(i).gameObject.SetActive(false);
-        }
-        positionStep = Random.Range(0, trainingPositions.transform.childCount);
-        trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
-    }
+    protected virtual void _onEpisodeBegin(){}
 
-    protected virtual Transform _getTarget()
-    {
-        return trainingPositions.transform.GetChild(positionStep).GetChild(1);
-    }
+    protected virtual Transform _getTarget(){return null;}
 
-    protected virtual Transform _getStart()
-    {
-        return trainingPositions.transform.GetChild(positionStep).GetChild(0); 
-    }
+    protected virtual Transform _getStart(){return null;}
 
 
     public override void OnEpisodeBegin()
@@ -110,7 +94,7 @@ public class car_agent : Agent
     }
 
 
-    private Vector3 distanceVector(Transform object1, Transform object2)
+    protected Vector3 distanceVector(Transform object1, Transform object2)
     {
         float x, y, z;
 
@@ -120,132 +104,23 @@ public class car_agent : Agent
         return new Vector3(x, y, z);
     }
 
-    public override void CollectObservations(VectorSensor sensor)
-    {
-        // Target and Agent positions
-        sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
-
-        // Agent velocity
-        sensor.AddObservation(rBody.velocity.x);
-        sensor.AddObservation(rBody.velocity.z);
-    }
-
-    protected virtual void _rewards()
-    {
-         // Rewards
-        float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
-
-        // Reached target
-        if (distanceToTarget < 1.42f)
-        {
-            SetReward(1.0f);
-            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(false);
-            
-            if(positionStep + 1 >= trainingPositions.transform.childCount)
-            {
-                positionStep = 0;
-            }
-            else
-            {
-                positionStep++;
-            }
-            
-            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
-            target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
-            target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
-        }
-        
-        if(distanceToTarget < lastDistanceToTarget)
-        {
-            AddReward(0.00001f);
-        }
-        else
-        {
-            AddReward(-0.00005f);
-        }
-
-        lastDistanceToTarget = distanceToTarget;
-
-        // Fell off platform
-        if (this.transform.position.y < 0)
-        {
-            EndEpisode();
-        }
-    } 
-
+    public override void CollectObservations(VectorSensor sensor){}
     
-    public override void OnActionReceived(ActionBuffers actionBuffers)
-    {
-        // Actions, size = 2
-        //car_script.horizontalInput = actionBuffers.ContinuousActions[0];
-        //car_script.verticalInput = actionBuffers.ContinuousActions[1];
 
-        //Break
-        if(actionBuffers.DiscreteActions[0] == 1)
-        {
-            car_script.isBreaking = true;
-        }
-        else if(actionBuffers.DiscreteActions[0] == 0)
-        {
-            car_script.isBreaking = false;
-        }
+    protected virtual void _fixRewards(){} 
 
-        //Horizontal
-        if(actionBuffers.DiscreteActions[1] == 0)
-        {
-            car_script.horizontalInput = 0;
-        }
-        else if(actionBuffers.DiscreteActions[1] == 1)
-        {
-            car_script.horizontalInput = 1;
-        }
-        else if(actionBuffers.DiscreteActions[1] == 2)
-        {
-            car_script.horizontalInput = -1;
-        }
-
-        //Vertical
-        if(actionBuffers.DiscreteActions[2] == 0)
-        {
-            car_script.verticalInput = 0;
-        }
-        else if(actionBuffers.DiscreteActions[2] == 1)
-        {
-            car_script.verticalInput = 1;
-        }
-        else if(actionBuffers.DiscreteActions[2] == 2)
-        {
-            car_script.verticalInput = -1;
-        }
+    protected virtual void _collisionRewards(string tag){}
 
 
-       _rewards();
-
+    public override void OnActionReceived(ActionBuffers actionBuffers){
+        _fixRewards();
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if(other.tag == "Death")
-        {
-            SetReward(-1f);
-            EndEpisode();
-        }
-    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        if(collision.transform.tag == "Death")
-        {
-            SetReward(-1f);
-            EndEpisode();
-        }
+        _collisionRewards(collision.transform.tag);
     }
 
-    int maxStep = 5000;
-    private void FixedUpdate()
-    {
-        if(this.StepCount >= maxStep)
-        {
-            EndEpisode();
-        }
-    }
+
 }
