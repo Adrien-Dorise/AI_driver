@@ -7,6 +7,11 @@ using Unity.MLAgents.Actuators;
 
 public class car_agent_template : car_agent
 {
+    protected override void _start()
+    {
+
+    }
+
     protected override void _onEpisodeBegin()
     {
         
@@ -32,20 +37,24 @@ public class car_agent_template : car_agent
         
     }
 
+    protected override void _collisionRewards(string tag)
+    {
+
+    }
     
+    protected override void _triggerRewards(string tag, bool is_inside)
+    {
+        if(is_inside)
+        {
+
+        }
+        else
+        {
+
+        }
+    }
+
     public override void OnActionReceived(ActionBuffers actionBuffers)
-    {
-
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        _collisionRewards(collision.transform.tag);
-    }
-    
-
-    int maxStep = 5000;
-    private void FixedUpdate()
     {
 
     }

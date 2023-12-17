@@ -1,16 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
+using System.Runtime.CompilerServices;
+
 
 public class car_agent : Agent
 {
     protected Rigidbody rBody;
-    protected Transform target;
+    [SerializeField] protected Transform target;
     protected car_controller car_script;
-    [SerializeField] protected GameObject trainingPositions;
     protected float lastDistanceToTarget;    
     [SerializeField] protected int positionStep;
 
@@ -18,14 +20,16 @@ public class car_agent : Agent
 
     void Start () 
     {
-        rBody = GetComponent<Rigidbody>();
         car_script = this.gameObject.GetComponent<car_controller>();
-        target = trainingPositions.transform.GetChild(0).GetChild(1);
         car_script.isAgent = true;
+        rBody = GetComponent<Rigidbody>();
         lastDistanceToTarget = 10000f;
         positionStep = 0;
+        _start();
     }
 
+    protected virtual void _start(){}
+    
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         var continuousActionsOut = actionsOut.ContinuousActions;
@@ -85,11 +89,11 @@ public class car_agent : Agent
         this.rBody.velocity = Vector3.zero;
         this.transform.position = startPosition.position;
         this.transform.rotation = startPosition.parent.localRotation;
-        this.transform.Rotate(new Vector3(0f,90f,0f));
-
-        //Move target to initial spot
-        //target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
-
+        this.transform.rotation = startPosition.rotation;
+        if(Vector3.Dot(distanceVector(target,this.transform).normalized, this.transform.forward) < 0)
+        {
+            this.transform.Rotate(new Vector3(0f,180f,0f));
+        }
         lastDistanceToTarget = 10000f;
     }
 
@@ -111,6 +115,7 @@ public class car_agent : Agent
 
     protected virtual void _collisionRewards(string tag){}
 
+    protected virtual void _triggerRewards(string tag, bool is_inside){}
 
     public override void OnActionReceived(ActionBuffers actionBuffers){
         _fixRewards();
@@ -122,5 +127,33 @@ public class car_agent : Agent
         _collisionRewards(collision.transform.tag);
     }
 
+    private void OnTriggerStay(Collider other)
+    {
+        _triggerRewards(other.tag, true);
+    }
 
+    private void OnTriggerExit(Collider other)
+    {
+        _triggerRewards(other.tag, false);
+    }
+
+     int maxStep = 5000;
+    ReadOnlyCollection<float> observations;
+    [SerializeField] List<float> obs = new List<float>();
+    private void FixedUpdate()
+    {
+        observations = this.GetObservations();
+        if(observations.Count > 0)
+        {
+            obs.Clear();
+            foreach(float o in observations)
+            {
+                obs.Add(o);
+            }
+        }
+        if(this.StepCount >= maxStep)
+        {
+            EndEpisode();
+        }
+    }
 }

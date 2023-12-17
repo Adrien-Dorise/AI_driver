@@ -883,6 +883,7 @@ GameObject:
   - component: {fileID: 1317982944207939836}
   - component: {fileID: 1727003703445678090}
   - component: {fileID: 2087013106529868406}
+  - component: {fileID: 538875540377974564}
   m_Layer: 0
   m_Name: Car Agent Discrete Navigation
   m_TagString: Agent
@@ -937,14 +938,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 8816962534406939906}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e6ff19869830e34e9659ee715e875c7, type: 3}
+  m_Script: {fileID: 11500000, guid: 23d0d0c7bd47d2241af2c945ec336d16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
-  training_position: {fileID: 0}
+  trainingPositions: {fileID: 0}
+  positionStep: 0
   obs: []
 --- !u!114 &3385494125937215516
 MonoBehaviour:
@@ -1070,3 +1072,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.97227156, y: 0.64610744, z: 2.6427479}
   m_Center: {x: -0.00062686205, y: 0.042467117, z: 0.0032604933}
+--- !u!114 &538875540377974564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8816962534406939906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88b6042bc9a5d4aa58d931eae49442e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentParameters:
+    maxStep: 0
+  hasUpgradedFromAgentParameters: 1
+  MaxStep: 0
