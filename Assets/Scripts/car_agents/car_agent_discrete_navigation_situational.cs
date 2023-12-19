@@ -3,44 +3,60 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
+using System.Collections.ObjectModel;
+using Unity.VisualScripting.Dependencies.Sqlite;
 
-public class car_agent_discrete_traffic : car_agent
+public class car_agent_discrete_navigation_situational : car_agent
 {
+
     private enum situationals {none, traffic_light};
     private situationals current_situational;
     private GameObject situational_object;
-    private Transform training_positions;
+    [SerializeField] navigation nav_script;
 
     protected override void _start()
     {
         current_situational = situationals.none;
         situational_object = null;
+        nav_script = this.transform.parent.GetComponentInChildren<navigation>();
     }
-
     protected override void _onEpisodeBegin()
     {
-        for(int i=0; i<training_positions.transform.childCount; i++)
+        nav_script.set_random_trip();
+        bool is_navigation_initialised = nav_script.activate_navigation(nav_script.start_point, nav_script.end_point) != -1;
+        if(!is_navigation_initialised)
         {
-            training_positions.transform.GetChild(i).gameObject.SetActive(false);
+            EndEpisode();
         }
-        positionStep = Random.Range(0, training_positions.transform.childCount);
-        training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
     }
 
     protected override Transform _getTarget()
     {
-        return training_positions.transform.GetChild(positionStep).GetChild(1);
+        return nav_script.active_target.transform.GetChild(1); 
     }
 
     protected override Transform _getStart()
     {
-        return training_positions.transform.GetChild(positionStep).GetChild(0);
+        Transform startPos =  nav_script.active_target.transform.GetChild(0);
+        bool is_next_path_null = nav_script.activate_next_node() == 0;
+        if(is_next_path_null)
+        {
+            EndEpisode();
+        }
+        return startPos;
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        // Target and Agent positions
-        sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+        //Target position
+        try{
+            sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
+        }
+        catch
+        {
+            sensor.AddObservation(distanceVector(this.transform, this.transform)); //3 observations
+            Debug.LogWarning("No target position found. Replaced with null vector3");            
+        }
 
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
@@ -142,20 +158,16 @@ public class car_agent_discrete_traffic : car_agent
             if(tag == "Target")
             {
                 SetReward(1.0f);
-                training_positions.transform.GetChild(positionStep).gameObject.SetActive(false);
-                
-                if(positionStep + 1 >= training_positions.transform.childCount)
+                if(nav_script.activate_next_node() == 0) //No nodes left
                 {
-                    positionStep = 0;
+                    EndEpisode();
                 }
-                else
-                {
-                    positionStep++;
+                try{
+                target = nav_script.active_target.transform.GetChild(1);
                 }
-                
-                training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
-                target = training_positions.transform.GetChild(positionStep).GetChild(1);
-                target.position = training_positions.transform.GetChild(positionStep).GetChild(1).position;
+                catch{
+                    Debug.LogWarning("No target available");
+                }
             }
         }
         else

@@ -4,128 +4,101 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
-using Unity.VisualScripting;
 
-public class car_agent : Agent
+
+public class car_agent_discrete : car_agent
 {
-    private Rigidbody rBody;
-    private Transform target;
-    private car_controller car_script;
-    [SerializeField] private GameObject trainingPositions;
-    [SerializeField] private int positionStep;
-
-    private float lastDistanceToTarget;
-    void Start () 
+    // To set in inspector
+    [SerializeField] private Transform toSet_training_positions;
+    
+    protected override void _onEpisodeBegin()
     {
-        rBody = GetComponent<Rigidbody>();
-        car_script = this.gameObject.GetComponent<car_controller>();
-        target = trainingPositions.transform.GetChild(0).GetChild(1);
-        car_script.isAgent = true;
-        lastDistanceToTarget = 10000f;
-        positionStep = 0;
+        for(int i=0; i<toSet_training_positions.transform.childCount; i++)
+        {
+            toSet_training_positions.transform.GetChild(i).gameObject.SetActive(false);
+        }
+        positionStep = Random.Range(0, toSet_training_positions.transform.childCount);
+        toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
     }
 
-    public override void Heuristic(in ActionBuffers actionsOut)
+    protected override Transform _getTarget()
     {
-        var continuousActionsOut = actionsOut.ContinuousActions;
-        var discreteActionsOut = actionsOut.DiscreteActions;
-        
-        //continuousActionsOut[0] = Input.GetAxis("Horizontal");
-        //continuousActionsOut[1] = Input.GetAxis("Vertical");
-
-        if(Input.GetKey(KeyCode.Space))
-        {
-            discreteActionsOut[0] = 1;
-        }
-        else
-        {
-            discreteActionsOut[0] = 0;
-        }
-
-        if(Input.GetAxis("Horizontal") == 0)
-        {
-            discreteActionsOut[1] = 0;
-        }
-        else if(Input.GetAxis("Horizontal") > 0)
-        {
-            discreteActionsOut[1] = 1;
-        }
-        else if(Input.GetAxis("Horizontal") < 0)
-        {
-            discreteActionsOut[1] = 2;
-        }
-         
-        if(Input.GetAxis("Vertical") == 0)
-        {
-            discreteActionsOut[2] = 0;
-        }
-        else if(Input.GetAxis("Vertical") > 0)
-        {
-            discreteActionsOut[2] = 1;
-        }
-        else if(Input.GetAxis("Vertical") < 0)
-        {
-            discreteActionsOut[2] = 2;
-        }
-       
-        
+        return toSet_training_positions.transform.GetChild(positionStep).GetChild(1);
     }
 
-    public override void OnEpisodeBegin()
+    protected override Transform _getStart()
     {
-        positionStep = UnityEngine.Random.Range(0, trainingPositions.transform.childCount);
-        for(int i=0; i<trainingPositions.transform.childCount; i++)
-        {
-            trainingPositions.transform.GetChild(i).gameObject.SetActive(false);
-        }
-        Transform startPosition = trainingPositions.transform.GetChild(positionStep).GetChild(0); 
-        trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
-        target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
-
-        //Move car to initial position
-        this.rBody.angularVelocity = Vector3.zero;
-        this.rBody.velocity = Vector3.zero;
-        this.transform.position = startPosition.position;
-        this.transform.rotation = startPosition.parent.localRotation;
-        this.transform.Rotate(new Vector3(0f,90f,0f));
-
-        //Move target to initial spot
-        //target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
-
-        lastDistanceToTarget = 10000f;
-    }
-
-
-    private Vector3 distanceVector(Transform object1, Transform object2)
-    {
-        float x, y, z;
-
-        x = object1.transform.position.x - object2.transform.position.x;
-        y = object1.transform.position.y - object2.transform.position.y;
-        z = object1.transform.position.z - object2.transform.position.z;
-        return new Vector3(x, y, z) / 50 ;
+        return toSet_training_positions.transform.GetChild(positionStep).GetChild(0);  
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
         sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
-        //sensor.AddObservation(target.position); // 3 observations
-        //sensor.AddObservation(this.transform.position); // 3 observations
-
 
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
         sensor.AddObservation(rBody.velocity.z);
     }
 
-    
+    protected override void _fixRewards()
+    {
+        // Approached target
+        float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
+        if(distanceToTarget < lastDistanceToTarget)
+        {
+            AddReward(0.00001f);
+        }
+        else
+        {
+            AddReward(-0.00005f);
+        }
+        lastDistanceToTarget = distanceToTarget;
+
+        // Fell off platform
+        if (this.transform.position.y < 0)
+        {
+            EndEpisode();
+        }
+    }
+
+    protected override void _collisionRewards(string tag)
+    {
+        if(tag == "Death")
+        {
+            SetReward(-1f);
+            EndEpisode();
+        }
+    }
+
+    protected override void _triggerRewards(string tag, bool is_inside)
+    {
+        if(is_inside)
+        {
+            if(tag == "Target")
+            {
+                SetReward(1.0f);
+                toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(false);
+                
+                if(positionStep + 1 >= toSet_training_positions.transform.childCount)
+                {
+                    positionStep = 0;
+                }
+                else
+                {
+                    positionStep++;
+                }
+                
+                toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
+                target = toSet_training_positions.transform.GetChild(positionStep).GetChild(1);
+                target.position = toSet_training_positions.transform.GetChild(positionStep).GetChild(1).position;
+            }
+        }
+    }
+
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-        // Actions, size = 2
-        //car_script.horizontalInput = actionBuffers.ContinuousActions[0];
-        //car_script.verticalInput = actionBuffers.ContinuousActions[1];
-
+        //Break
         if(actionBuffers.DiscreteActions[0] == 1)
         {
             car_script.isBreaking = true;
@@ -135,6 +108,7 @@ public class car_agent : Agent
             car_script.isBreaking = false;
         }
 
+        //Horizontal
         if(actionBuffers.DiscreteActions[1] == 0)
         {
             car_script.horizontalInput = 0;
@@ -148,6 +122,7 @@ public class car_agent : Agent
             car_script.horizontalInput = -1;
         }
 
+        //Vertical
         if(actionBuffers.DiscreteActions[2] == 0)
         {
             car_script.verticalInput = 0;
@@ -161,72 +136,9 @@ public class car_agent : Agent
             car_script.verticalInput = -1;
         }
 
-
-        // Rewards
-        float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
-
-        // Reached target
-        if (distanceToTarget < 1.42f)
-        {
-            SetReward(1.0f);
-            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(false);
-            
-            if(positionStep + 1 >= trainingPositions.transform.childCount)
-            {
-                positionStep = 0;
-            }
-            else
-            {
-                positionStep++;
-            }
-            
-            trainingPositions.transform.GetChild(positionStep).gameObject.SetActive(true);
-            target = trainingPositions.transform.GetChild(positionStep).GetChild(1);
-            target.position = trainingPositions.transform.GetChild(positionStep).GetChild(1).position;
-        }
-        
-        if(distanceToTarget < lastDistanceToTarget)
-        {
-            AddReward(0.00001f);
-        }
-        else
-        {
-            AddReward(-0.00005f);
-        }
-
-        lastDistanceToTarget = distanceToTarget;
-
-        // Fell off platform
-        if (this.transform.position.y < 0)
-        {
-            EndEpisode();
-        }
-
+       _fixRewards();
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if(other.tag == "Death")
-        {
-            SetReward(-1f);
-            EndEpisode();
-        }
-    }
-    private void OnCollisionEnter(Collision collision)
-    {
-        if(collision.transform.tag == "Death")
-        {
-            SetReward(-1f);
-            EndEpisode();
-        }
-    }
-
-    int maxStep = 5000;
-    private void FixedUpdate()
-    {
-        if(this.StepCount >= maxStep)
-        {
-            EndEpisode();
-        }
-    }
+    
 }
+
