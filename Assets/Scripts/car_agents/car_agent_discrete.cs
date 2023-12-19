@@ -8,26 +8,27 @@ using Unity.MLAgents.Actuators;
 
 public class car_agent_discrete : car_agent
 {
-    private Transform training_positions;
+    // To set in inspector
+    [SerializeField] private Transform toSet_training_positions;
     
     protected override void _onEpisodeBegin()
     {
-        for(int i=0; i<training_positions.transform.childCount; i++)
+        for(int i=0; i<toSet_training_positions.transform.childCount; i++)
         {
-            training_positions.transform.GetChild(i).gameObject.SetActive(false);
+            toSet_training_positions.transform.GetChild(i).gameObject.SetActive(false);
         }
-        positionStep = Random.Range(0, training_positions.transform.childCount);
-        training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
+        positionStep = Random.Range(0, toSet_training_positions.transform.childCount);
+        toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
     }
 
     protected override Transform _getTarget()
     {
-        return training_positions.transform.GetChild(positionStep).GetChild(1);
+        return toSet_training_positions.transform.GetChild(positionStep).GetChild(1);
     }
 
     protected override Transform _getStart()
     {
-        return training_positions.transform.GetChild(positionStep).GetChild(0);  
+        return toSet_training_positions.transform.GetChild(positionStep).GetChild(0);  
     }
 
     public override void CollectObservations(VectorSensor sensor)
@@ -77,9 +78,9 @@ public class car_agent_discrete : car_agent
             if(tag == "Target")
             {
                 SetReward(1.0f);
-                training_positions.transform.GetChild(positionStep).gameObject.SetActive(false);
+                toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(false);
                 
-                if(positionStep + 1 >= training_positions.transform.childCount)
+                if(positionStep + 1 >= toSet_training_positions.transform.childCount)
                 {
                     positionStep = 0;
                 }
@@ -88,9 +89,9 @@ public class car_agent_discrete : car_agent
                     positionStep++;
                 }
                 
-                training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
-                target = training_positions.transform.GetChild(positionStep).GetChild(1);
-                target.position = training_positions.transform.GetChild(positionStep).GetChild(1).position;
+                toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
+                target = toSet_training_positions.transform.GetChild(positionStep).GetChild(1);
+                target.position = toSet_training_positions.transform.GetChild(positionStep).GetChild(1).position;
             }
         }
     }
