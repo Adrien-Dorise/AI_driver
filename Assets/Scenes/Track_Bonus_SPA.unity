@@ -3221,7 +3221,7 @@ GameObject:
   - component: {fileID: 585334000}
   - component: {fileID: 585333999}
   m_Layer: 0
-  m_Name: Ground
+  m_Name: Terrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3245,7 +3245,7 @@ TerrainCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_TerrainData: {fileID: 15600000, guid: 39fb7962bd61d5b45a35deb3cc8e2ae9, type: 2}
+  m_TerrainData: {fileID: 15600000, guid: 6e5648f2d7813774a911e7841539b55d, type: 2}
   m_EnableTreeColliders: 1
 --- !u!218 &585334000
 Terrain:
@@ -3256,7 +3256,7 @@ Terrain:
   m_GameObject: {fileID: 585333998}
   m_Enabled: 1
   serializedVersion: 6
-  m_TerrainData: {fileID: 15600000, guid: 39fb7962bd61d5b45a35deb3cc8e2ae9, type: 2}
+  m_TerrainData: {fileID: 15600000, guid: 6e5648f2d7813774a911e7841539b55d, type: 2}
   m_TreeDistance: 5000
   m_TreeBillboardDistance: 50
   m_TreeCrossFadeLength: 5
