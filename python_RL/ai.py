@@ -35,8 +35,13 @@ class ReplayMemory(object):
             del self.memory[0]
     
     def sample(self, batch_size):
-        samples = zip(*random.sample(self.memory, batch_size))
-        return map(lambda x: Variable(torch.cat(x, 0)), samples)
+        batch = random.sample(self.memory, batch_size)
+        batch_state = torch.cat([b[0] for b in batch])
+        batch_next_state = torch.cat([b[1] for b in batch])
+        batch_action = torch.cat([b[2] for b in batch])
+        batch_reward = torch.cat([b[3] for b in batch])
+        return batch_state, batch_next_state, batch_action, batch_reward
+        
 
 # Implementing Deep Q Learning
 class Dqn():
@@ -56,8 +61,14 @@ class Dqn():
         return activation_function(self.model(state))
     
     def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
-        outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
-        next_outputs = self.model(batch_next_state).detach().max(1)[0]
+        #outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
+        outputs = self.model(batch_state)
+        print(batch_state)
+        print(outputs)
+        print("\n")
+        next_outputs = self.model(batch_next_state)
+        print(next_outputs)
+        print(batch)
         target = self.gamma*next_outputs + batch_reward
         td_loss = F.smooth_l1_loss(outputs, target)
         self.optimizer.zero_grad()
@@ -66,15 +77,15 @@ class Dqn():
     
     def update(self, reward, new_signal):
         new_state = torch.from_numpy(new_signal)
-        self.memory.push((self.last_state, new_state, self.last_action, torch.Tensor([self.last_reward])))
         action = self.set_actions(new_state)
-        if len(self.memory.memory) > 100:
-            batch_state, batch_next_state, batch_action, batch_reward = self.memory.sample(100)
-            self.learn(batch_state, batch_next_state, batch_reward, batch_action)
-        self.last_action = action
         self.last_state = new_state
         self.last_reward = reward
         self.reward_window.append(reward)
+        self.last_action = action
+        self.memory.push((self.last_state, new_state, self.last_action, torch.Tensor([self.last_reward])))
+        if len(self.memory.memory) > 10:
+            batch_state, batch_next_state, batch_action, batch_reward = self.memory.sample(3)
+            self.learn(batch_state, batch_next_state, batch_reward, batch_action)
         if len(self.reward_window) > 1000:
             del self.reward_window[0]
         return action.detach().cpu().numpy()[0]
