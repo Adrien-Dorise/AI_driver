@@ -8,9 +8,12 @@ using Unity.MLAgents.Actuators;
 public class rollerAgentDiscrete : Agent
 {
     private Rigidbody rBody;
+    private float lastDistanceToTarget;
+    public Transform target;
     void Start () 
     {
         rBody = GetComponent<Rigidbody>();
+        lastDistanceToTarget = 1000f;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -38,7 +41,6 @@ public class rollerAgentDiscrete : Agent
         }
     }
 
-    public Transform Target;
     public override void OnEpisodeBegin()
     {
        // If the Agent fell, zero its momentum
@@ -50,16 +52,23 @@ public class rollerAgentDiscrete : Agent
         }
 
         // Move the target to a new spot
-        Target.localPosition = new Vector3(Random.value * 8 - 4,
+        target.localPosition = new Vector3(Random.value * 8 - 4,
                                            0.5f,
                                            Random.value * 8 - 4);
+    }
+
+    protected Vector2 distanceVector(Transform object1, Transform object2)
+    {
+        float x,    z;
+        x = object1.transform.position.x - object2.transform.position.x;
+        z = object1.transform.position.z - object2.transform.position.z;
+        return new Vector2(x,  z);
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
-        sensor.AddObservation(Target.localPosition);
-        sensor.AddObservation(this.transform.localPosition);
+        sensor.AddObservation(distanceVector(this.transform, target)); //2 observations
 
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
@@ -102,18 +111,30 @@ public class rollerAgentDiscrete : Agent
         rBody.AddForce(controlSignal * forceMultiplier);
 
         // Rewards
-        float distanceToTarget = Vector3.Distance(this.transform.localPosition, Target.localPosition);
+        float distanceToTarget = Vector3.Distance(this.transform.localPosition, target.localPosition);
 
-        // Reached target
+            // Getting closer or further from target
+        if(distanceToTarget < lastDistanceToTarget)
+        {
+            AddReward(0.05f);
+        }
+        else
+        {
+            AddReward(-0.05f);
+        }
+        lastDistanceToTarget = distanceToTarget;
+        
+            // Reached target
         if (distanceToTarget < 1.42f)
         {
             SetReward(1.0f);
             EndEpisode();
         }
-
-        // Fell off platform
-        else if (this.transform.localPosition.y < 0)
+        
+            // Fell off platform
+        if (this.transform.localPosition.y < 0)
         {
+            SetReward(-1f);
             EndEpisode();
         }
     }

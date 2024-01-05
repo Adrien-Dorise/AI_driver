@@ -55,20 +55,17 @@ class Dqn():
         self.last_state = torch.Tensor(input_size).unsqueeze(0)
         self.last_action = 0
         self.last_reward = 0
+        self.temperature = 10
     
     def set_actions(self, state):
-        activation_function = nn.Tanh()
-        return activation_function(self.model(state))
+        with torch.no_grad():
+            probs = F.softmax(self.model(state)*self.temperature, dim=1)
+        action = probs.multinomial(num_samples=1)
+        return action.data[0,0]
     
     def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
-        #outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
-        outputs = self.model(batch_state)
-        print(batch_state)
-        print(outputs)
-        print("\n")
-        next_outputs = self.model(batch_next_state)
-        print(next_outputs)
-        print(batch)
+        outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
+        next_outputs = self.model(batch_next_state).detach().max(1)[0]
         target = self.gamma*next_outputs + batch_reward
         td_loss = F.smooth_l1_loss(outputs, target)
         self.optimizer.zero_grad()
@@ -82,16 +79,11 @@ class Dqn():
         self.last_reward = reward
         self.reward_window.append(reward)
         self.last_action = action
-        self.memory.push((self.last_state, new_state, self.last_action, torch.Tensor([self.last_reward])))
-        if len(self.memory.memory) > 10:
-            batch_state, batch_next_state, batch_action, batch_reward = self.memory.sample(3)
+        self.memory.push((self.last_state, new_state, torch.LongTensor([int(self.last_action)]), torch.Tensor([self.last_reward])))
+        if len(self.memory.memory) > 100:
+            batch_state, batch_next_state, batch_action, batch_reward = self.memory.sample(100)
             self.learn(batch_state, batch_next_state, batch_reward, batch_action)
-        if len(self.reward_window) > 1000:
-            del self.reward_window[0]
-        return action.detach().cpu().numpy()[0]
-    
-    def score(self):
-        return sum(self.reward_window)/(len(self.reward_window)+1.)
+        return action.detach().cpu().numpy()
     
     def save(self):
         torch.save({'state_dict': self.model.state_dict(),

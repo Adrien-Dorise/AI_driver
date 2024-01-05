@@ -7,7 +7,7 @@ import time
 import matplotlib.pyplot as plt
 
 def main():
-	brain = ai.Dqn(8,2,0.9)
+	brain = ai.Dqn(4,5,0.9)
 	print("Brain initialised.\nPress the Play button in Unity editor")
 	# This is a non-blocking call that only loads the environment.
 	env = UnityEnvironment(file_name=None)
@@ -15,30 +15,30 @@ def main():
 	try:
 		env.reset()
 		save_steps = 0
-		reward_save = []
+		rewards = []
+		reward_episodes = []
 		behavior_names = env.behavior_specs.keys()
 		for name in behavior_names:
 			print(name)
 			agent_name = name
 		while True:
-			if(save_steps >= 500):
-				brain.save()
-				save_steps = 0
 			step = env.get_steps(name)
-			#print_step_status(step[0], step[1])
 			if(len(step[1].agent_id>0)):
 				env.reset()
+				reward_episodes.append(sum(rewards)/(len(rewards)+1.))
+				rewards = []
+				print(f"Episode reward: {reward_episodes[-1]}")
 			obs = get_observations(step)
-			reward = get_reward(step)
-			reward_save.append(reward)
-			act = brain.update(reward,obs)
-			actions = ActionTuple(discrete=None, continuous=np.array([act], dtype=np.float32))
+			rewards.append(get_reward(step))
+			act = brain.update(rewards[-1],obs).reshape(1,-1)
+			actions = ActionTuple(discrete=np.array(act, dtype=np.int32), continuous=None)
 			env.set_actions(agent_name, actions)
 			env.step()
 			save_steps +=1
 	finally:
 		env.close()
-		plot_reward_history(reward_save)
+		brain.save()
+		plot_reward_history(reward_episodes)
 
 def get_observations(step):
 	if(len(step[0].agent_id > 0)):
