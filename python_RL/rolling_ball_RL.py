@@ -7,7 +7,7 @@ import time
 import matplotlib.pyplot as plt
 
 def main():
-	brain = ai.Dqn(4,5,0.9)
+	brain = ai.Dqn(input_size=4,output_size=5,gamma=0.9,lr=0.01,temperature=2)
 	print("Brain initialised.\nPress the Play button in Unity editor")
 	# This is a non-blocking call that only loads the environment.
 	env = UnityEnvironment(file_name=None)
@@ -29,13 +29,11 @@ def main():
 				if(is_dead(step[1], agent_ID)):
 					if(agent_ID == 0):
 						reward_episode_agent0.append(sum(rewards[0])/(len(rewards[0])+1.))
-					env.reset()
+						print(f"Episode reward: {reward_episode_agent0[-1]}")
+					#env.reset()
 					rewards[agent_ID] = []
-					print(f"Episode reward: {reward_episode_agent0[-1]}")
-				obs = get_observations(step, agent_ID)
+				obs = get_observations_int(step, agent_ID)
 				rewards[agent_ID].append(get_reward(step,agent_ID))
-				print(rewards[agent_ID][-1])
-				print(obs)
 				act = brain.update(rewards[agent_ID][-1],obs).reshape(1,-1)
 				actions = ActionTuple(discrete=np.array(act, dtype=np.int32), continuous=None)
 				env.set_action_for_agent(agent_name, agent_ID, actions)
@@ -56,7 +54,7 @@ def get_observations(step, agent_id):
 		agent_id (int): Agent id
 
 	Returns:
-		float: Current reward for the specified agent
+		array[float]: Observations of the specified agent
 	"""
 	for i in range(len(step[0].agent_id)):
 		if(agent_id == i):
@@ -65,7 +63,27 @@ def get_observations(step, agent_id):
 	for i in range(len(step[1].agent_id)):
 		if(agent_id == i):
 			return step[1].obs[0][i]
+	return 0
 
+def get_observations_int(step, agent_id):
+	"""Get the observations of a specific agent 
+	Step is divided into two parts: decision steps and terminal steps. 
+	We need to search in both objects to find the corresponding reward
+
+	Args:
+		step (step Object): _description_
+		agent_id (int): Agent id
+
+	Returns:
+		array[int]: Observations of the specified agent
+	"""
+	for i in range(len(step[0].agent_id)):
+		if(agent_id == i):
+			return np.array(step[0].obs[0][i]*10,dtype=np.int32)
+
+	for i in range(len(step[1].agent_id)):
+		if(agent_id == i):
+			return np.array([step[1].obs[0][i]]*10,dtype=np.int32)
 	return 0
 
 def is_dead(terminal_step, agent_id):
