@@ -59,7 +59,7 @@ public class rollerAgentDiscrete : Agent
 
     protected Vector2 distanceVector(Transform object1, Transform object2)
     {
-        float x,    z;
+        float x, z;
         x = object1.transform.position.x - object2.transform.position.x;
         z = object1.transform.position.z - object2.transform.position.z;
         return new Vector2(x,  z);
@@ -134,7 +134,6 @@ public class rollerAgentDiscrete : Agent
             // Fell off platform
         if (this.transform.localPosition.y < 0)
         {
-            SetReward(-1f);
             EndEpisode();
         }
     }

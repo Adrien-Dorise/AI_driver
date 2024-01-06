@@ -14,43 +14,97 @@ def main():
 	# Start interacting with the environment.
 	try:
 		env.reset()
-		save_steps = 0
-		rewards = []
-		reward_episodes = []
+		reward_episode_agent0 = []
 		behavior_names = env.behavior_specs.keys()
 		for name in behavior_names:
-			print(name)
 			agent_name = name
+		agent_number = len(env.get_steps(name)[0].agent_id)
+		rewards = []
+		for i in range(agent_number):
+			rewards.append([])
+		
 		while True:
 			step = env.get_steps(name)
-			if(len(step[1].agent_id>0)):
-				env.reset()
-				reward_episodes.append(sum(rewards)/(len(rewards)+1.))
-				rewards = []
-				print(f"Episode reward: {reward_episodes[-1]}")
-			obs = get_observations(step)
-			rewards.append(get_reward(step))
-			act = brain.update(rewards[-1],obs).reshape(1,-1)
-			actions = ActionTuple(discrete=np.array(act, dtype=np.int32), continuous=None)
-			env.set_actions(agent_name, actions)
+			for agent_ID in range(agent_number):
+				if(is_dead(step[1], agent_ID)):
+					if(agent_ID == 0):
+						reward_episode_agent0.append(sum(rewards[0])/(len(rewards[0])+1.))
+					env.reset()
+					rewards[agent_ID] = []
+					print(f"Episode reward: {reward_episode_agent0[-1]}")
+				obs = get_observations(step, agent_ID)
+				rewards[agent_ID].append(get_reward(step,agent_ID))
+				print(rewards[agent_ID][-1])
+				print(obs)
+				act = brain.update(rewards[agent_ID][-1],obs).reshape(1,-1)
+				actions = ActionTuple(discrete=np.array(act, dtype=np.int32), continuous=None)
+				env.set_action_for_agent(agent_name, agent_ID, actions)
 			env.step()
-			save_steps +=1
 	finally:
 		env.close()
 		brain.save()
-		plot_reward_history(reward_episodes)
+		plot_reward_history(reward_episode_agent0)
 
-def get_observations(step):
-	if(len(step[0].agent_id > 0)):
-		return step[0].obs[0]
-	else:
-		return step[1].obs[0]
 
-def get_reward(step):
-	if(len(step[0].agent_id > 0)):
-		return step[0].reward[0]
+def get_observations(step, agent_id):
+	"""Get the observations of a specific agent 
+	Step is divided into two parts: decision steps and terminal steps. 
+	We need to search in both objects to find the corresponding reward
+
+	Args:
+		step (step Object): _description_
+		agent_id (int): Agent id
+
+	Returns:
+		float: Current reward for the specified agent
+	"""
+	for i in range(len(step[0].agent_id)):
+		if(agent_id == i):
+			return step[0].obs[0][i]
+
+	for i in range(len(step[1].agent_id)):
+		if(agent_id == i):
+			return step[1].obs[0][i]
+
+	return 0
+
+def is_dead(terminal_step, agent_id):
+	"""Verifies if an agent has finished its episode
+
+	Args:
+		terminal_step (mlAgent object): Terminal step Unity object
+		agent_id (int): _description_
+
+	Returns:
+		_type_: true if agent is dead, false otherwise
+	"""
+	for id in terminal_step.agent_id:
+		if id == agent_id:
+			return True
 	else:
-		return step[1].reward[0]
+		return False
+
+def get_reward(step, agent_id):
+	"""Get the reward for a specific agent 
+	Step is divided into two parts: decision steps and terminal steps. 
+	We need to search in both objects to find the corresponding reward
+
+	Args:
+		step (step Object): _description_
+		agent_id (int): Agent id
+
+	Returns:
+		float: Current reward for the specified agent
+	"""
+	for i in range(len(step[0].agent_id)):
+		if(agent_id == i):
+			return step[0].reward[i]
+
+	for i in range(len(step[1].agent_id)):
+		if(agent_id == i):
+			return step[1].reward[i]
+
+	return 0
 
 def plot_reward_history(rewards):
 	plt.plot(rewards)

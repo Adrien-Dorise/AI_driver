@@ -74,6 +74,7 @@ class Dqn():
     
     def update(self, reward, new_signal):
         new_state = torch.from_numpy(new_signal)
+        print(self.model(new_state))
         action = self.set_actions(new_state)
         self.last_state = new_state
         self.last_reward = reward
