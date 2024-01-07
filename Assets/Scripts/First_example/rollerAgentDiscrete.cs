@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
+using System.Threading;
 
 public class rollerAgentDiscrete : Agent
 {
@@ -68,7 +69,9 @@ public class rollerAgentDiscrete : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         // Target and Agent positions
-        sensor.AddObservation(distanceVector(this.transform, target)); //2 observations
+        //sensor.AddObservation(distanceVector(this.transform, target)); //2 observations
+        sensor.AddObservation(this.transform.localPosition);
+        sensor.AddObservation(target.localPosition);
 
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);

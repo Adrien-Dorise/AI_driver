@@ -5,9 +5,10 @@ import numpy as np
 import ai
 import time
 import matplotlib.pyplot as plt
+import torch
 
 def main():
-	brain = ai.Dqn(input_size=4,output_size=5,gamma=0.9,lr=0.01,temperature=2)
+	brain = ai.Dqn(input_size=8,output_size=5,gamma=0.99,lr=0.001)
 	print("Brain initialised.\nPress the Play button in Unity editor")
 	# This is a non-blocking call that only loads the environment.
 	env = UnityEnvironment(file_name=None)
@@ -22,27 +23,63 @@ def main():
 		rewards = []
 		for i in range(agent_number):
 			rewards.append([])
-		
+				
+		# Initialise model state 
+		obs, reward, step = get_agent_infos(env, name, 0)
+		brain.init_state(obs)
+		state = brain.state
 		while True:
-			step = env.get_steps(name)
 			for agent_ID in range(agent_number):
-				if(is_dead(step[1], agent_ID)):
+				act = brain.select_actions(state).reshape(1,-1)
+				actions = ActionTuple(discrete=np.array(act.cpu(), dtype=np.int32), continuous=None)
+				env.set_action_for_agent(agent_name, agent_ID, actions)
+				env.step()
+
+				obs, rew, step = get_agent_infos(env, name, agent_ID)
+				rewards[agent_ID].append(rew)
+				dead = is_dead(step[1], agent_ID)
+
+				state = brain.update(rew, obs, dead)
+				
+				if(dead):
 					if(agent_ID == 0):
 						reward_episode_agent0.append(sum(rewards[0])/(len(rewards[0])+1.))
 						print(f"Episode reward: {reward_episode_agent0[-1]}")
 					#env.reset()
 					rewards[agent_ID] = []
-				obs = get_observations_int(step, agent_ID)
-				rewards[agent_ID].append(get_reward(step,agent_ID))
-				act = brain.update(rewards[agent_ID][-1],obs).reshape(1,-1)
-				actions = ActionTuple(discrete=np.array(act, dtype=np.int32), continuous=None)
-				env.set_action_for_agent(agent_name, agent_ID, actions)
-			env.step()
+			
 	finally:
 		env.close()
 		brain.save()
 		plot_reward_history(reward_episode_agent0)
 
+def get_agent_infos(env, behaviour_name, agent_id):
+	step = env.get_steps(behaviour_name)
+	obs = get_observations_int(step, agent_id)
+	reward = get_reward(step, agent_id)
+	return obs, reward, step
+
+def get_reward(step, agent_id):
+	"""Get the reward for a specific agent 
+	Step is divided into two parts: decision steps and terminal steps. 
+	We need to search in both objects to find the corresponding reward.
+	Note: As Agent is always in decision step, we seach first in terminalStep to ifnd latest reward.
+
+	Args:
+		step (step Object): _description_
+		agent_id (int): Agent id
+
+	Returns:
+		float: Current reward for the specified agent
+	"""
+	for i in range(len(step[1].agent_id)):
+		if(agent_id == i):
+			return step[1].reward[i]
+	for i in range(len(step[0].agent_id)):
+		if(agent_id == i):
+			return step[0].reward[i]
+
+	return 0
 
 def get_observations(step, agent_id):
 	"""Get the observations of a specific agent 
@@ -102,33 +139,12 @@ def is_dead(terminal_step, agent_id):
 	else:
 		return False
 
-def get_reward(step, agent_id):
-	"""Get the reward for a specific agent 
-	Step is divided into two parts: decision steps and terminal steps. 
-	We need to search in both objects to find the corresponding reward
-
-	Args:
-		step (step Object): _description_
-		agent_id (int): Agent id
-
-	Returns:
-		float: Current reward for the specified agent
-	"""
-	for i in range(len(step[0].agent_id)):
-		if(agent_id == i):
-			return step[0].reward[i]
-
-	for i in range(len(step[1].agent_id)):
-		if(agent_id == i):
-			return step[1].reward[i]
-
-	return 0
 
 def plot_reward_history(rewards):
 	plt.plot(rewards)
 	plt.grid()
 	plt.title("Rolling ball rewards")
-	plt.xlabel("Steps")
+	plt.xlabel("Episode")
 	plt.ylabel("Reward")
 	plt.savefig("rolling_ball_reward.png")
 	plt.show()

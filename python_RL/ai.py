@@ -8,85 +8,155 @@ import torch.optim as optim
 import torch.autograd as autograd
 from torch.autograd import Variable
 
+from collections import namedtuple, deque
+import math
+
 class Network(nn.Module):
     
     def __init__(self, input_size, output_size):
         super(Network, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.fc1 = nn.Linear(input_size, 128)
-        self.fc2 = nn.Linear(128, output_size)
+        self.fc_input = nn.Linear(input_size, 128)
+        self.fc1 = nn.Linear(128,128)
+        self.fc_output = nn.Linear(128, output_size)
     
     def forward(self, state):
-        x = F.relu(self.fc1(state))
-        q_values = self.fc2(x)
+        x = F.relu(self.fc_input(state))
+        x = F.relu(self.fc1(x))
+        q_values = self.fc_output(x)
         return q_values
 
 # Implementing Experience Replay
 class ReplayMemory(object):
     
     def __init__(self, capacity):
+        self.Transition = namedtuple('Transition',
+                        ('state', 'action', 'next_state', 'reward'))
         self.capacity = capacity
-        self.memory = []
+        self.memory = deque([], maxlen=capacity)
     
-    def push(self, event):
-        self.memory.append(event)
-        if len(self.memory) > self.capacity:
-            del self.memory[0]
+    def push(self, *args):
+        """Save a transition"""
+        self.memory.append(self.Transition(*args))
     
     def sample(self, batch_size):
-        batch = random.sample(self.memory, batch_size)
-        batch_state = torch.cat([b[0] for b in batch])
-        batch_next_state = torch.cat([b[1] for b in batch])
-        batch_action = torch.cat([b[2] for b in batch])
-        batch_reward = torch.cat([b[3] for b in batch])
-        return batch_state, batch_next_state, batch_action, batch_reward
+        return random.sample(self.memory, batch_size)
+    
+    def __len__(self):
+        return len(self.memory)
         
 
 # Implementing Deep Q Learning
 class Dqn():
     
-    def __init__(self, input_size, output_size, gamma, lr, temperature):
+
+
+    def __init__(self, input_size, output_size, batch_size=128, gamma=0.95, tau=0.005, lr=1e-3, eps_start=0.9, eps_end=0.05, eps_decay=10000):
+        """ Implements the deep Q-learning algorithm
+
+        Args:
+            input_size (int): Number of observations given to the agent
+            output_size (int): Number of possible actions performed by the agent
+            batch_size (int, optional): Number of transitions sampled from the replay buffer. Defaults to 128.
+            gamma (float, optional): Discount factor. Defaults to 0.95.
+            tau (float, optional): Update rate of the target network. Defaults to 0.005.
+            lr (_type_, optional): Learning rate of the optimiser. Defaults to 1e-3.
+            eps_start (float, optional): Starting value of epsilon. Defaults to 0.9.
+            eps_end (float, optional): Final value of epsilon. Defaults to 0.05.
+            eps_decay (int, optional): Rate of the exponential decay of epsilon. Higher value means slower decay. Defaults to 1000.
+        """
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.gamma = gamma
-        self.reward_window = []
-        self.model = Network(input_size, output_size)
+        self.batch_size = batch_size
+        self.tau = tau
+        self.eps_start = eps_start
+        self.eps_end = eps_end
+        self.eps_decay = eps_decay
+        self.output_size = output_size
+        self.input_size = input_size
+        self.policy_net = Network(input_size, output_size).to(self.device)
+        self.target_net = Network(input_size, output_size).to(self.device)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=lr, amsgrad=True)
         self.memory = ReplayMemory(100000)
-        self.optimizer = optim.Adam(self.model.parameters(), lr = lr)
-        self.last_state = torch.Tensor(input_size).unsqueeze(0)
+        self.state = torch.Tensor(input_size).unsqueeze(0).to(self.device)
         self.last_action = 0
-        self.last_reward = 0
-        self.temperature = temperature
+        self.steps_done = 0
+
+    def init_state(self, observation):
+        self.state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
     
-    def set_actions(self, state):
-        with torch.no_grad():
-            probs = F.softmax(self.model(state)*self.temperature, dim=1)
-        action = probs.multinomial(num_samples=1)
-        return action.data[0,0]
-    
-    def learn(self, batch_state, batch_next_state, batch_reward, batch_action):
-        outputs = self.model(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze(1)
-        next_outputs = self.model(batch_next_state).detach().max(1)[0]
-        target = self.gamma*next_outputs + batch_reward
-        td_loss = F.smooth_l1_loss(outputs, target)
-        self.optimizer.zero_grad()
-        td_loss.backward()
-        self.optimizer.step()
-    
-    def update(self, reward, new_signal):
-        new_state = torch.Tensor(new_signal).float().unsqueeze(0)
-        action = self.set_actions(new_state)
-        self.memory.push((self.last_state, new_state, torch.LongTensor([int(self.last_action)]), torch.Tensor([self.last_reward])))
-        if len(self.memory.memory) > 200:
-            batch_state, batch_next_state, batch_action, batch_reward = self.memory.sample(200)
-            self.learn(batch_state, batch_next_state, batch_reward, batch_action)
-        self.last_state = new_state
-        self.last_reward = reward
-        self.reward_window.append(reward)
+    def select_actions(self, state):
+        
+        sample = random.random()
+        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
+            math.exp(-1. * self.steps_done / self.eps_decay)
+        self.steps_done += 1
+        if sample > eps_threshold:
+            with torch.no_grad():
+                # t.max(1) will return the largest column value of each row.
+                # second column on max result is index of where max element was
+                # found, so we pick action with the larger expected reward.
+                action = self.policy_net(state).max(1).indices.view(1, 1)
+        else:
+            action =  torch.tensor([[random.randint(0,self.output_size-1)]], device=self.device, dtype=torch.long)
+        
         self.last_action = action
-        return action.detach().cpu().numpy()
+        return action
     
+    def learn(self, batch_size):
+        transitions = self.memory.sample(batch_size)
+        batch = self.memory.Transition(*zip(*transitions))
+        
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
+                                          batch.next_state)), device=self.device, dtype=torch.bool)
+        non_final_next_states = torch.cat([s for s in batch.next_state
+                                                    if s is not None])
+        state_batch = torch.cat(batch.state)
+        action_batch = torch.cat(batch.action)
+        reward_batch = torch.cat(batch.reward)
+
+        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+        next_state_values = torch.zeros(batch_size, device=self.device)
+        with torch.no_grad():
+            next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+        
+        criterion = nn.SmoothL1Loss()
+        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        # In-place gradient clipping
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        self.optimizer.step()
+
+    
+    def update(self, reward, observation, is_dead):
+        #action = self.set_actions(self.state)
+
+        reward = torch.tensor([reward], device=self.device)
+
+        new_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
+
+
+        self.memory.push(self.state, self.last_action, new_state, reward)
+        self.state = new_state
+        
+        if len(self.memory) > self.batch_size:
+            self.learn(self.batch_size)
+
+        self.target_net_state_dict = self.target_net.state_dict()
+        self.policy_net_state_dict = self.policy_net.state_dict()
+        for key in self.policy_net_state_dict:
+            self.target_net_state_dict[key] = self.policy_net_state_dict[key]*self.tau + self.target_net_state_dict[key]*(1-self.tau)
+        self.target_net.load_state_dict(self.target_net_state_dict)
+
+        return new_state
+
     def save(self):
-        torch.save({'state_dict': self.model.state_dict(),
+        torch.save({'state_dict': self.policy_net.state_dict(),
                     'optimizer' : self.optimizer.state_dict(),
                    }, 'last_brain.pth')
     
@@ -94,8 +164,10 @@ class Dqn():
         if os.path.isfile('last_brain.pth'):
             print("=> loading checkpoint... ")
             checkpoint = torch.load('last_brain.pth')
-            self.model.load_state_dict(checkpoint['state_dict'])
+            self.policy_net.load_state_dict(checkpoint['state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer'])
             print("done !")
         else:
             print("no checkpoint found...")
+
+
