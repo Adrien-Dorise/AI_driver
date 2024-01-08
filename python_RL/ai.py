@@ -84,11 +84,14 @@ class Dqn():
         self.last_action = 0
         self.steps_done = 0
 
+
     def init_state(self, observation):
         self.state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
     
     def select_actions(self, state):
-        
+        print(state)
+        if state is None:
+            return torch.tensor([[0]])
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
             math.exp(-1. * self.steps_done / self.eps_decay)
@@ -138,8 +141,10 @@ class Dqn():
 
         reward = torch.tensor([reward], device=self.device)
 
-        new_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
-
+        if is_dead:
+            new_state = None
+        else:
+            new_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
         self.memory.push(self.state, self.last_action, new_state, reward)
         self.state = new_state

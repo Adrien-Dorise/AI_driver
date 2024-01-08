@@ -1,17 +1,51 @@
-
 from mlagents_envs.environment import UnityEnvironment
+from mlagents_envs.envs.unity_gym_env import UnityToGymWrapper
 from mlagents_envs.base_env import ActionTuple
 import numpy as np
 import ai
+import gym_test.ai as ai2
 import time
 import matplotlib.pyplot as plt
 import torch
 
 def main():
-	brain = ai.Dqn(input_size=8,output_size=5,gamma=0.99,lr=0.001)
+	brain = ai.Dqn(input_size=8,output_size=5,gamma=0.95,lr=0.001)
 	print("Brain initialised.\nPress the Play button in Unity editor")
 	# This is a non-blocking call that only loads the environment.
-	env = UnityEnvironment(file_name=None)
+	unity_env = UnityEnvironment(file_name=None)
+	gym = UnityToGymWrapper(unity_env=unity_env, allow_multiple_obs=True)
+	
+	try:
+		# Get number of actions from gym action space
+		n_actions = gym.action_space.n
+		# Get the number of state observations
+		rewards = []
+		state = gym.reset()
+		n_observations = len(state)
+		
+		state = gym.reset()
+		state = torch.tensor(np.array(state), dtype=torch.float32, device=brain.device).unsqueeze(0)
+		brain.state = state
+		while(True):
+			action = brain.select_actions(state)
+			print(action)
+			action =torch.tensor([1])
+			observation, reward, terminated, truncated = gym.step(action.item())
+			done = terminated or truncated
+			state = brain.update(reward,observation,done)
+			rewards.append(reward)
+			if(done):
+				#gym.reset()
+				#print(reward)
+				pass
+
+	finally:
+		gym.close()
+		brain.save()
+		plot_reward_history(rewards)
+
+
+	'''
 	# Start interacting with the environment.
 	try:
 		env.reset()
@@ -47,11 +81,9 @@ def main():
 						print(f"Episode reward: {reward_episode_agent0[-1]}")
 					#env.reset()
 					rewards[agent_ID] = []
-			
-	finally:
-		env.close()
-		brain.save()
-		plot_reward_history(reward_episode_agent0)
+		'''
+		
+	
 
 def get_agent_infos(env, behaviour_name, agent_id):
 	step = env.get_steps(behaviour_name)
