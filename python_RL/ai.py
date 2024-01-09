@@ -1,20 +1,21 @@
-import numpy as np
 import random
 import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torch.autograd as autograd
-from torch.autograd import Variable
-
 from collections import namedtuple, deque
 import math
-from itertools import count
 
 class Network(nn.Module):
     
     def __init__(self, input_size, output_size):
+        """ Classic neural network implementation using Pytorch
+
+        Args:
+            input_size (int): Number of observations perceived by the agent
+            output_size (int): Number of actions
+        """
         super(Network, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -23,36 +24,60 @@ class Network(nn.Module):
         self.fc_output = nn.Linear(256, output_size)
     
     def forward(self, state):
+        """ Classic Pytorch forward implementation
+
+        Args:
+            state (torch tensor): Current state (observations)
+
+        Returns:
+            torch tensor: Q-value
+        """
         x = F.relu(self.fc_input(state))
         x = F.relu(self.fc1(x))
         q_values = self.fc_output(x)
         return q_values
 
-# Implementing Experience Replay
+
 class ReplayMemory(object):
     
     def __init__(self, capacity):
+        """ Experience replay implementation
+
+        Args:
+            capacity (int): Max capacity of the memory
+        """
         self.Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
         self.capacity = capacity
         self.memory = deque([], maxlen=capacity)
     
     def push(self, *args):
-        """Save a transition"""
+        """ Save a transition """
         self.memory.append(self.Transition(*args))
     
     def sample(self, batch_size):
+        """ Sampling among all pre-registered events
+
+        Args:
+            batch_size (int): Number of observations to return in the batch
+
+        Returns:
+            list of tensor: Observation batch
+        """
         return random.sample(self.memory, batch_size)
     
     def __len__(self):
+        """ Get memory current size
+
+        Returns:
+            int: current memory size
+        """
         return len(self.memory)
         
 
-# Implementing Deep Q Learning
+
 class Dqn():
     
-
-
     def __init__(self, input_size, output_size, batch_size=256, gamma=0.99, tau=0.005, lr=1e-4, eps_start=0.9, eps_end=0.05, eps_decay=1000):
         """ Implements the deep Q-learning algorithm
 
@@ -84,19 +109,26 @@ class Dqn():
         self.state = torch.Tensor(input_size).unsqueeze(0).to(self.device)
         self.last_action = 0
         self.steps_done = 0
-
-
-    def init_state(self, observation):
-        self.state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
     
-    def select_actions(self, state):
+    def select_actions(self, state, is_train):
+        """ Set a possible action based on the given state of observation
+        Depending on the epsilon policy, the returned action can be the result of a random generator (exploration),
+        or the result of the trained neural network (exploitation).
+        
+        Args:
+            state (torch tensor): Observations
+            is_train (bool): If the model is not in training mode, it will only use exploitation
+
+        Returns:
+            torch tensor: Selected action 
+        """
         if state is None:
             return torch.tensor([[0]])
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
             math.exp(-1. * self.steps_done / self.eps_decay)
         self.steps_done += 1
-        if sample > eps_threshold:
+        if sample > eps_threshold or not is_train:
             with torch.no_grad():
                 # t.max(1) will return the largest column value of each row.
                 # second column on max result is index of where max element was
@@ -108,12 +140,21 @@ class Dqn():
         self.last_action = action
         return action
     
+    
     def learn(self, batch_size):
+        """Train the neural network based on the data stored in the replay memory
+
+        Args:
+            batch_size (int): number of information per batch
+        """
         if len(self.memory) < batch_size:
             return
+        
+        # Batch creation
         transitions = self.memory.sample(batch_size)
         batch = self.memory.Transition(*zip(*transitions))
         
+            # We create batches containing only non None values.
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                           batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state
@@ -122,15 +163,16 @@ class Dqn():
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
 
+        # Target calculation
         state_action_values = self.policy_net(state_batch).gather(1, action_batch)
         next_state_values = torch.zeros(batch_size, device=self.device)
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
         
+        #Training
         criterion = nn.SmoothL1Loss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
-
         self.optimizer.zero_grad()
         loss.backward()
         # In-place gradient clipping
@@ -138,22 +180,34 @@ class Dqn():
         self.optimizer.step()
 
     
-    def update(self, reward, observation, is_dead):
-        #action = self.set_actions(self.state)
+    def update(self, reward, observation, is_dead, is_train):
+        """Update the model with the new environment state
+
+        Args:
+            reward (int): Current state's reward
+            observation (torch tensor): Current state's observations
+            is_dead (bool): Did the simulation ended with a reset state?
+            is_train (bool); Should we update the model weights?
+
+        Returns:
+            torch tensor: New state (observations) registered by the model
+        """
 
         reward = torch.tensor([reward], device=self.device)
-
         if is_dead:
             new_state = None
         else:
             new_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
+        # Add state to memory
         self.memory.push(self.state, self.last_action, new_state, reward)
         self.state = new_state
         
-        if len(self.memory) > self.batch_size:
+        # Training
+        if len(self.memory) > self.batch_size and is_train:
             self.learn(self.batch_size)
 
+        # Update networks
         self.target_net_state_dict = self.target_net.state_dict()
         self.policy_net_state_dict = self.policy_net.state_dict()
         for key in self.policy_net_state_dict:
@@ -163,11 +217,15 @@ class Dqn():
         return new_state
 
     def save(self):
+        """Save models in root folder
+        """
         torch.save({'state_dict': self.policy_net.state_dict(),
                     'optimizer' : self.optimizer.state_dict(),
                    }, 'last_brain.pth')
     
     def load(self):
+        """Load model from root folder
+        """
         if os.path.isfile('last_brain.pth'):
             print("=> loading checkpoint... ")
             checkpoint = torch.load('last_brain.pth')
