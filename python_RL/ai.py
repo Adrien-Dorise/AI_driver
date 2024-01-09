@@ -10,6 +10,7 @@ from torch.autograd import Variable
 
 from collections import namedtuple, deque
 import math
+from itertools import count
 
 class Network(nn.Module):
     
@@ -17,9 +18,9 @@ class Network(nn.Module):
         super(Network, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.fc_input = nn.Linear(input_size, 128)
-        self.fc1 = nn.Linear(128,128)
-        self.fc_output = nn.Linear(128, output_size)
+        self.fc_input = nn.Linear(input_size, 256)
+        self.fc1 = nn.Linear(256,256)
+        self.fc_output = nn.Linear(256, output_size)
     
     def forward(self, state):
         x = F.relu(self.fc_input(state))
@@ -52,7 +53,7 @@ class Dqn():
     
 
 
-    def __init__(self, input_size, output_size, batch_size=128, gamma=0.95, tau=0.005, lr=1e-3, eps_start=0.9, eps_end=0.05, eps_decay=10000):
+    def __init__(self, input_size, output_size, batch_size=256, gamma=0.99, tau=0.005, lr=1e-4, eps_start=0.9, eps_end=0.05, eps_decay=1000):
         """ Implements the deep Q-learning algorithm
 
         Args:
@@ -78,8 +79,8 @@ class Dqn():
         self.policy_net = Network(input_size, output_size).to(self.device)
         self.target_net = Network(input_size, output_size).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=lr, amsgrad=True)
-        self.memory = ReplayMemory(100000)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
+        self.memory = ReplayMemory(500000)
         self.state = torch.Tensor(input_size).unsqueeze(0).to(self.device)
         self.last_action = 0
         self.steps_done = 0
@@ -89,7 +90,6 @@ class Dqn():
         self.state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
     
     def select_actions(self, state):
-        print(state)
         if state is None:
             return torch.tensor([[0]])
         sample = random.random()
@@ -109,6 +109,8 @@ class Dqn():
         return action
     
     def learn(self, batch_size):
+        if len(self.memory) < batch_size:
+            return
         transitions = self.memory.sample(batch_size)
         batch = self.memory.Transition(*zip(*transitions))
         

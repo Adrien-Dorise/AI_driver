@@ -5,6 +5,7 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 using System.Threading;
+using Unity.VisualScripting;
 
 public class rollerAgentDiscrete : Agent
 {
@@ -47,11 +48,12 @@ public class rollerAgentDiscrete : Agent
        // If the Agent fell, zero its momentum
         if (this.transform.localPosition.y < 0)
         {
-            this.rBody.angularVelocity = Vector3.zero;
-            this.rBody.velocity = Vector3.zero;
-            this.transform.localPosition = new Vector3( 0, 0.5f, 0);
         }
 
+        this.rBody.angularVelocity = Vector3.zero;
+        this.rBody.velocity = Vector3.zero;
+        this.transform.localPosition = new Vector3( 0, 0.5f, 0);
+        
         // Move the target to a new spot
         target.localPosition = new Vector3(Random.value * 8 - 4,
                                            0.5f,
@@ -119,11 +121,11 @@ public class rollerAgentDiscrete : Agent
             // Getting closer or further from target
         if(distanceToTarget < lastDistanceToTarget)
         {
-            AddReward(0.05f);
+            AddReward(0.1f);
         }
         else
         {
-            AddReward(-0.05f);
+            AddReward(-0.1f);
         }
         lastDistanceToTarget = distanceToTarget;
         
@@ -136,6 +138,17 @@ public class rollerAgentDiscrete : Agent
         
             // Fell off platform
         if (this.transform.localPosition.y < 0)
+        {
+            SetReward(-1f);
+            EndEpisode();
+        }
+
+    }
+
+    private void FixedUpdate()
+    {
+        
+        if(this.StepCount >= 500)
         {
             EndEpisode();
         }

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 
 def main():
-	brain = ai.Dqn(input_size=8,output_size=5,gamma=0.95,lr=0.001)
+	brain = ai.Dqn(input_size=8,output_size=5,gamma=0.99,lr=0.001)
 	print("Brain initialised.\nPress the Play button in Unity editor")
 	# This is a non-blocking call that only loads the environment.
 	unity_env = UnityEnvironment(file_name=None)
@@ -19,30 +19,33 @@ def main():
 		# Get number of actions from gym action space
 		n_actions = gym.action_space.n
 		# Get the number of state observations
-		rewards = []
+		rewards, reward_episode = [], []
 		state = gym.reset()
 		n_observations = len(state)
 		
-		state = gym.reset()
-		state = torch.tensor(np.array(state), dtype=torch.float32, device=brain.device).unsqueeze(0)
-		brain.state = state
+		reset_gym(gym,brain)
 		while(True):
 			action = brain.select_actions(state)
-			print(action)
-			action =torch.tensor([1])
 			observation, reward, terminated, truncated = gym.step(action.item())
-			done = terminated or truncated
-			state = brain.update(reward,observation,done)
+			observation = observation[0]
+			#print_gym_status(action, observation, reward, terminated, truncated)
+			state = brain.update(reward,observation,terminated)
 			rewards.append(reward)
-			if(done):
-				#gym.reset()
-				#print(reward)
+			if(terminated):
+				reset_gym(gym,brain)
+				reward_episode.append(reward)
+				print(reward)
 				pass
 
 	finally:
 		gym.close()
 		brain.save()
-		plot_reward_history(rewards)
+		plot_reward_history(reward_episode)
+
+def reset_gym(gym, brain):
+	state = gym.reset()
+	state = torch.tensor(state[0], dtype=torch.float32, device=brain.device).unsqueeze(0)
+	brain.state = state
 
 
 	'''
@@ -173,7 +176,15 @@ def is_dead(terminal_step, agent_id):
 
 
 def plot_reward_history(rewards):
+	average_window = 15
 	plt.plot(rewards)
+	if len(rewards) >= average_window:
+		means = []
+		for i in range(0,average_window):
+			means.append(np.mean(rewards[0:i]))
+		for i in range(average_window,len(rewards)):
+			means.append(np.mean(rewards[i-average_window:i]))
+		plt.plot(means)
 	plt.grid()
 	plt.title("Rolling ball rewards")
 	plt.xlabel("Episode")
@@ -193,6 +204,14 @@ def print_step_status(decision_step, terminal_step):
 	print(f"Reward: {terminal_step.reward}")
 	print(f"Agent ID: {terminal_step.agent_id}")
 	print(f"Is dead: {terminal_step.interrupted}\n")
+
+def print_gym_status(action, observation, reward, terminated, truncated):
+	print("[Gym infos]")
+	print(f"Action: {action}")
+	print(f"Obs: {observation}")
+	print(f"Reward: {reward}")
+	print(f"Terminated: {terminated}")
+	print(f"Truncated: {truncated}\n")
 	
 	
 if __name__ == '__main__':
