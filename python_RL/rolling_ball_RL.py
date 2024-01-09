@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 
 def main():
-	brain = ai.Dqn(input_size=8,output_size=5,gamma=0.99,lr=0.001)
+	brain = ai.Dqn(input_size=9,output_size=5,gamma=0.99,lr=0.001)
 	print("Brain initialised.\nPress the Play button in Unity editor")
 	# This is a non-blocking call that only loads the environment.
 	unity_env = UnityEnvironment(file_name=None)
@@ -19,12 +19,14 @@ def main():
 		# Get number of actions from gym action space
 		n_actions = gym.action_space.n
 		# Get the number of state observations
-		rewards, reward_episode = [], []
+		rewards, reward_episode, episode_duration = [], [], []
+		step = 0
 		state = gym.reset()
 		n_observations = len(state)
 		
 		reset_gym(gym,brain)
 		while(True):
+			step += 1
 			action = brain.select_actions(state)
 			observation, reward, terminated, truncated = gym.step(action.item())
 			observation = observation[0]
@@ -34,13 +36,14 @@ def main():
 			if(terminated):
 				reset_gym(gym,brain)
 				reward_episode.append(reward)
-				print(reward)
-				pass
+				episode_duration.append(step)
+				print(f"Reward: {reward} / Duration: {step}")
+				step = 0
 
 	finally:
 		gym.close()
 		brain.save()
-		plot_reward_history(reward_episode)
+		plot_reward_history(reward_episode,episode_duration)
 
 def reset_gym(gym, brain):
 	state = gym.reset()
@@ -175,20 +178,30 @@ def is_dead(terminal_step, agent_id):
 		return False
 
 
-def plot_reward_history(rewards):
+def plot_reward_history(rewards, durations):
 	average_window = 15
-	plt.plot(rewards)
+
 	if len(rewards) >= average_window:
-		means = []
+		mean_rewards, mean_durations = [],[]
 		for i in range(0,average_window):
-			means.append(np.mean(rewards[0:i]))
+			mean_rewards.append(np.mean(rewards[0:i]))
+			mean_durations.append(np.mean(durations[0:i]))
 		for i in range(average_window,len(rewards)):
-			means.append(np.mean(rewards[i-average_window:i]))
-		plt.plot(means)
-	plt.grid()
-	plt.title("Rolling ball rewards")
-	plt.xlabel("Episode")
-	plt.ylabel("Reward")
+			mean_rewards.append(np.mean(rewards[i-average_window:i]))
+			mean_durations.append(np.mean(durations[i-average_window:i]))
+
+	fig, axs = plt.subplots(2,1, figsize=(16, 9))
+	fig.suptitle('Rolling ball episodes info')
+	axs[0].plot(rewards)
+	axs[0].plot(mean_rewards)
+	axs[0].set(ylabel=" Last reward", xlabel="Episode")
+	axs[0].grid()
+	axs[0].set
+
+	axs[1].plot(durations)
+	axs[1].plot(mean_durations)
+	axs[1].set(ylabel="Duration (steps)", xlabel="Episode")
+	axs[1].grid()
 	plt.savefig("rolling_ball_reward.png")
 	plt.show()
 

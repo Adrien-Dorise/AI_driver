@@ -78,6 +78,9 @@ public class rollerAgentDiscrete : Agent
         // Agent velocity
         sensor.AddObservation(rBody.velocity.x);
         sensor.AddObservation(rBody.velocity.z);
+
+        // Step count
+        sensor.AddObservation(this.StepCount);
     }
 
     public float forceMultiplier = 10;
@@ -150,6 +153,7 @@ public class rollerAgentDiscrete : Agent
         
         if(this.StepCount >= 500)
         {
+            SetReward(-0.5f);
             EndEpisode();
         }
     }
