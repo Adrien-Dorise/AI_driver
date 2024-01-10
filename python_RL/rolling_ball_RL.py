@@ -10,14 +10,15 @@ def main():
 	#Parameters
 	input_size = 9
 	output_size = 5
-	batch_size=256
-	gamma=0.99
-	tau=0.005
-	lr=1e-4
-	eps_start=0.9
-	eps_end=0.05
-	eps_decay=1000
+	batch_size = 256
+	gamma = 0.99
+	tau = 0.005
+	lr = 1e-4
+	eps_start = 0.9
+	eps_end = 0.05
+	eps_decay = 2000
 	is_train = True
+	load_brain = False
 
 	# Init environment 
 	print("Starting simulation. Press the Play button in Unity editor")
@@ -27,6 +28,7 @@ def main():
 	try:
 		rewards, reward_episode, episode_duration = [], [], []
 		step = 0
+		total_steps = 0
 
 		# Init Deep Q-learning 
 		brain = ai.Dqn(input_size=input_size,
@@ -38,7 +40,8 @@ def main():
 				 eps_start=eps_start,
 				 eps_end=eps_end,
 				 eps_decay=eps_decay)
-		brain.load()
+		if load_brain:
+			brain.load()
 		
 		#Start simulation
 		reset_gym(gym,brain)
@@ -60,13 +63,18 @@ def main():
 				reset_gym(gym,brain)
 				reward_episode.append(reward)
 				episode_duration.append(step)
-				print(f"Reward: {reward} / Duration: {step}")
+				nb_episode = len(reward_episode)
+				total_steps += step
+				print(f"Episode: {nb_episode} / Step: {total_steps} / Reward: {reward} / Duration: {step}")
 				step = 0
+				if(nb_episode > 20):
+					if(np.mean(reward_episode[nb_episode-20:nb_episode])>0.9):
+						break
 
 	finally:
 		gym.close()
 		brain.save()
-		plot_reward_history(reward_episode,episode_duration)
+		plot_reward_history(reward_episode,episode_duration, total_steps)
 
 def reset_gym(gym, brain):
 	""" Reset gym environment (required after the end of an episode)
@@ -81,14 +89,15 @@ def reset_gym(gym, brain):
 	brain.state = state
 
 
-def plot_reward_history(rewards, durations):
+def plot_reward_history(rewards, durations, steps):
 	"""End of simulation plot
 
 	Args:
 		rewards (list of float): Rewards throughout the simulation
 		durations (list of int): Duration of episodes throughout the simulation
+		steps (int): Number of total steps during training
 	"""
-	average_window = 15
+	average_window = 20
 
 	if len(rewards) < average_window:
 		print("Not enough episode to plot results")
@@ -103,7 +112,7 @@ def plot_reward_history(rewards, durations):
 		mean_durations.append(np.mean(durations[i-average_window:i]))
 
 	fig, axs = plt.subplots(2,1, figsize=(16, 9))
-	fig.suptitle('Rolling ball episodes info')
+	fig.suptitle(f"Rolling ball info for {len(rewards)} episodes and {steps} steps")
 	axs[0].plot(rewards)
 	axs[0].plot(mean_rewards)
 	axs[0].set(ylabel=" Last reward", xlabel="Episode")

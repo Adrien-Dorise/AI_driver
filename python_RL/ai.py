@@ -19,9 +19,9 @@ class Network(nn.Module):
         super(Network, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.fc_input = nn.Linear(input_size, 256)
-        self.fc1 = nn.Linear(256,256)
-        self.fc_output = nn.Linear(256, output_size)
+        self.fc_input = nn.Linear(input_size, 512)
+        self.fc1 = nn.Linear(512,512)
+        self.fc_output = nn.Linear(512, output_size)
     
     def forward(self, state):
         """ Classic Pytorch forward implementation
@@ -78,7 +78,7 @@ class ReplayMemory(object):
 
 class Dqn():
     
-    def __init__(self, input_size, output_size, batch_size=256, gamma=0.99, tau=0.005, lr=1e-4, eps_start=0.9, eps_end=0.05, eps_decay=1000):
+    def __init__(self, input_size, output_size, batch_size=128, gamma=0.99, tau=0.005, lr=1e-4, eps_start=0.9, eps_end=0.05, eps_decay=1000):
         """ Implements the deep Q-learning algorithm
 
         Args:
@@ -105,7 +105,7 @@ class Dqn():
         self.target_net = Network(input_size, output_size).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
-        self.memory = ReplayMemory(500000)
+        self.memory = ReplayMemory(100000)
         self.state = torch.Tensor(input_size).unsqueeze(0).to(self.device)
         self.last_action = 0
         self.steps_done = 0
