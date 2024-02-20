@@ -7504,6 +7504,10 @@ PrefabInstance:
       propertyPath: toSet_training_positions
       value: 
       objectReference: {fileID: 6093037075632996597}
+    - target: {fileID: 7884781494919574467, guid: 3b87a5ebca98d2b419e26c6eaf5c9cde, type: 3}
+      propertyPath: m_Model
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

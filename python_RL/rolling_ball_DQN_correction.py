@@ -19,6 +19,8 @@ class Network(nn.Module):
         super(Network, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
+
+#       !!!!!!!!!!!!!! Implement the network architecture !!!!!!!!!!!!!!
         self.fc_input = nn.Linear(input_size, 512)
         self.fc1 = nn.Linear(512,512)
         self.fc_output = nn.Linear(512, output_size)
@@ -32,6 +34,8 @@ class Network(nn.Module):
         Returns:
             torch tensor: Q-value
         """
+
+#       !!!!!!!!!!!!!! Implement the input propagation through the network to get the Q-value !!!!!!!!!!!!!! 
         x = F.relu(self.fc_input(state))
         x = F.relu(self.fc1(x))
         q_values = self.fc_output(x)
@@ -93,19 +97,26 @@ class Dqn():
             eps_decay (int, optional): Rate of the exponential decay of epsilon. Higher value means slower decay. Defaults to 1000.
         """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+        # !!!!!!!!!!!!!! Parameters can be changed here !!!!!!!!!!!!!!
+        self.lr = lr
         self.gamma = gamma
         self.batch_size = batch_size
         self.tau = tau
+        self.update_frequency = 500
         self.eps_start = eps_start
         self.eps_end = eps_end
         self.eps_decay = eps_decay
+
+        self.Q_net = Network(input_size, output_size).to(self.device)
+        self.target_net = Network(input_size, output_size).to(self.device)
+        self.memory = ReplayMemory(100000)
+
         self.output_size = output_size
         self.input_size = input_size
-        self.policy_net = Network(input_size, output_size).to(self.device)
-        self.target_net = Network(input_size, output_size).to(self.device)
-        self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
-        self.memory = ReplayMemory(100000)
+        self.target_net.load_state_dict(self.Q_net.state_dict())
+        self.optimizer = optim.Adam(self.Q_net.parameters(), lr=self.lr)
         self.state = torch.Tensor(input_size).unsqueeze(0).to(self.device)
         self.last_action = 0
         self.steps_done = 0
@@ -133,7 +144,7 @@ class Dqn():
                 # t.max(1) will return the largest column value of each row.
                 # second column on max result is index of where max element was
                 # found, so we pick action with the larger expected reward.
-                action = self.policy_net(state).max(1).indices.view(1, 1)
+                action = self.Q_net(state).max(1).indices.view(1, 1)
         else:
             action =  torch.tensor([[random.randint(0,self.output_size-1)]], device=self.device, dtype=torch.long)
         
@@ -154,7 +165,7 @@ class Dqn():
         transitions = self.memory.sample(batch_size)
         batch = self.memory.Transition(*zip(*transitions))
         
-            # We create batches containing only non None values.
+        # We create batches containing only non None values.
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                           batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state
@@ -163,20 +174,23 @@ class Dqn():
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
 
-        # Target calculation
-        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+        # Get Q-value for time t+1
+        state_action_values = self.Q_net(state_batch).gather(1, action_batch)
         next_state_values = torch.zeros(batch_size, device=self.device)
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+
+#       !!!!!!!!!!!!!! Calculate target !!!!!!!!!!!!!!
+        target = (next_state_values * self.gamma) + reward_batch
         
-        #Training
+
+        # Training the network by updating its weight
         criterion = nn.SmoothL1Loss()
-        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+        loss = criterion(state_action_values, target.unsqueeze(1))
         self.optimizer.zero_grad()
         loss.backward()
         # In-place gradient clipping
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        torch.nn.utils.clip_grad_value_(self.Q_net.parameters(), 100)
         self.optimizer.step()
 
     
@@ -193,13 +207,15 @@ class Dqn():
             torch tensor: New state (observations) registered by the model
         """
 
+        # Translate reward variable into a Pytorch tensor type.
         reward = torch.tensor([reward], device=self.device)
         if is_dead:
             new_state = None
         else:
             new_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
-        # Add state to memory
+
+#       !!!!!!!!!!!!!! Add the new state to memory !!!!!!!!!!!!!!
         self.memory.push(self.state, self.last_action, new_state, reward)
         self.state = new_state
         
@@ -207,11 +223,12 @@ class Dqn():
         if len(self.memory) > self.batch_size and is_train:
             self.learn(self.batch_size)
 
-        # Update networks
+
+#        !!!!!!!!!!!!!! Update target network at some frequency F !!!!!!!!!!!!!!
         self.target_net_state_dict = self.target_net.state_dict()
-        self.policy_net_state_dict = self.policy_net.state_dict()
-        for key in self.policy_net_state_dict:
-            self.target_net_state_dict[key] = self.policy_net_state_dict[key]*self.tau + self.target_net_state_dict[key]*(1-self.tau)
+        self.Q_net_state_dict = self.Q_net.state_dict()
+        for key in self.Q_net_state_dict:
+            self.target_net_state_dict[key] = self.Q_net_state_dict[key]*self.tau + self.target_net_state_dict[key]*(1-self.tau)
         self.target_net.load_state_dict(self.target_net_state_dict)
 
         return new_state
@@ -219,7 +236,7 @@ class Dqn():
     def save(self):
         """Save models in root folder
         """
-        torch.save({'state_dict': self.policy_net.state_dict(),
+        torch.save({'state_dict': self.Q_net.state_dict(),
                     'optimizer' : self.optimizer.state_dict(),
                    }, 'last_brain.pth')
     
@@ -229,7 +246,7 @@ class Dqn():
         if os.path.isfile('last_brain.pth'):
             print("=> loading checkpoint... ")
             checkpoint = torch.load('last_brain.pth')
-            self.policy_net.load_state_dict(checkpoint['state_dict'])
+            self.Q_net.load_state_dict(checkpoint['state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer'])
             print("done !")
         else:

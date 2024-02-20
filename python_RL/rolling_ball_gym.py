@@ -1,7 +1,7 @@
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.envs.unity_gym_env import UnityToGymWrapper
 import numpy as np
-import ai
+import rolling_ball_DQN
 import matplotlib.pyplot as plt
 import torch
 
@@ -31,7 +31,7 @@ def main():
 		total_steps = 0
 
 		# Init Deep Q-learning 
-		brain = ai.Dqn(input_size=input_size,
+		brain = rolling_ball_DQN.Dqn(input_size=input_size,
 				 output_size=output_size,
 				 batch_size=batch_size,
 				 gamma=gamma,

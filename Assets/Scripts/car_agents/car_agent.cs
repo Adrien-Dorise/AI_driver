@@ -137,7 +137,7 @@ public class car_agent : Agent
         _triggerRewards(other.tag, false);
     }
 
-     int maxStep = 5000;
+    int maxStep = 5000;
     ReadOnlyCollection<float> observations;
     [SerializeField] List<float> obs = new List<float>();
     private void FixedUpdate()
