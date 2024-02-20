@@ -7,6 +7,9 @@ using Unity.MLAgents.Actuators;
 
 public class car_agent_template : car_agent
 {
+    // To set in inspector
+    [SerializeField] private Transform toSet_training_positions;
+    
     /// <summary>
     /// Call back of the Unity Start() function.
     /// It is called at the instantiation of a car_agent game object.
