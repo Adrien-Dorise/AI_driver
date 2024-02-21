@@ -5,12 +5,12 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 
-
-public class car_agent_discrete : car_agent
+public class car_agent_template_track1 : car_agent
 {
+
     // To set in inspector
     [SerializeField] private Transform toSet_training_positions;
-    
+
 
     /// <summary>
     /// Call back of the mlagent OnEpisodeBegin() function.
@@ -28,7 +28,6 @@ public class car_agent_discrete : car_agent
         toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(true);
     }
 
-
     /// <summary>
     /// Find and return the target to be used at the start of an episode.
     /// It is called in the base OnEpisodeBegin() function.
@@ -38,7 +37,7 @@ public class car_agent_discrete : car_agent
     {
         return toSet_training_positions.transform.GetChild(positionStep).GetChild(1);
     }
-
+    
     /// <summary>
     /// Find and return the "start" object to be used to initialise the car agent position
     /// at the start of an episode.
@@ -57,15 +56,9 @@ public class car_agent_discrete : car_agent
     /// <param name="sensor">Vector listing all the agent observations</param>
     public override void CollectObservations(VectorSensor sensor)
     {
-        // Target and Agent positions
-        sensor.AddObservation(distanceVector(this.transform, target)); //3 observations
-
-        // Agent velocity
-        sensor.AddObservation(rBody.velocity.x);
-        sensor.AddObservation(rBody.velocity.z);
+        //TODO
     }
 
-    private float lastDistance;
     /// <summary>
     /// Set the rewards given to the agent during training.
     /// Use "AddReward(float)" or "SetReward(float)" to add reward goal.
@@ -74,18 +67,7 @@ public class car_agent_discrete : car_agent
     /// </summary>
     protected override void _fixRewards()
     {
-        // Approached target
-        float distanceToTarget = Vector3.Distance(this.transform.position, target.position);
-        if(distanceToTarget < lastDistance)
-        {
-            AddReward(0.00001f);
-        }
-        else
-        {
-            AddReward(-0.00005f);
-        }
-        lastDistance = distanceToTarget;
-
+        //TODO
     }
 
     /// <summary>
@@ -97,11 +79,10 @@ public class car_agent_discrete : car_agent
     {
         if(tag == "Death")
         {
-            SetReward(-1.0f);
-            EndEpisode();
+            //TODO
         }
     }
-
+    
     /// <summary>
     /// Set the rewards resulting to a collision with an external trigger hitbox.
     /// Use "AddReward(float)" or "SetReward(float)" to add reward goal.
@@ -116,7 +97,7 @@ public class car_agent_discrete : car_agent
         {
             if(tag == "Target")
             {
-                SetReward(1.0f);
+                //TODO
 
                 // When the target is reached, we switch to the next target.
                 toSet_training_positions.transform.GetChild(positionStep).gameObject.SetActive(false);
@@ -134,6 +115,10 @@ public class car_agent_discrete : car_agent
                 target.position = toSet_training_positions.transform.GetChild(positionStep).GetChild(1).position;
             }
         }
+        else
+        {
+
+        }
     }
 
     /// <summary>
@@ -145,47 +130,10 @@ public class car_agent_discrete : car_agent
     /// <param name="actionBuffers">Output of the neural network model.</param>
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-        //Break
-        if(actionBuffers.DiscreteActions[0] == 1)
-        {
-            car_script.isBreaking = true;
-        }
-        else if(actionBuffers.DiscreteActions[0] == 0)
-        {
-            car_script.isBreaking = false;
-        }
+        //Put your actions here.
+        //TODO
 
-        //Horizontal
-        if(actionBuffers.DiscreteActions[1] == 0)
-        {
-            car_script.horizontalInput = 0;
-        }
-        else if(actionBuffers.DiscreteActions[1] == 1)
-        {
-            car_script.horizontalInput = 1;
-        }
-        else if(actionBuffers.DiscreteActions[1] == 2)
-        {
-            car_script.horizontalInput = -1;
-        }
-
-        //Vertical
-        if(actionBuffers.DiscreteActions[2] == 0)
-        {
-            car_script.verticalInput = 0;
-        }
-        else if(actionBuffers.DiscreteActions[2] == 1)
-        {
-            car_script.verticalInput = 1;
-        }
-        else if(actionBuffers.DiscreteActions[2] == 2)
-        {
-            car_script.verticalInput = -1;
-        }
-
-       _fixRewards();
+        _fixRewards();
     }
-
     
 }
-
