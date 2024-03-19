@@ -2253,13 +2253,21 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8922705938879432363, guid: 34ca93d2b969d0044bab583749a64d21, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8922705938879432363, guid: 34ca93d2b969d0044bab583749a64d21, type: 3}
       propertyPath: training_position
       value: 
       objectReference: {fileID: 8984953458862334066}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8922705938879432363, guid: 34ca93d2b969d0044bab583749a64d21, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2681752302130501358, guid: 34ca93d2b969d0044bab583749a64d21, type: 3}
+      insertIndex: 2
+      addedObject: {fileID: 1281401106}
   m_SourcePrefab: {fileID: 100100000, guid: 34ca93d2b969d0044bab583749a64d21, type: 3}
 --- !u!4 &1281401097 stripped
 Transform:
@@ -2271,6 +2279,26 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2681752302130501358, guid: 34ca93d2b969d0044bab583749a64d21, type: 3}
   m_PrefabInstance: {fileID: 1281401096}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1281401106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281401098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23d0d0c7bd47d2241af2c945ec336d16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentParameters:
+    maxStep: 0
+  hasUpgradedFromAgentParameters: 1
+  MaxStep: 0
+  target: {fileID: 0}
+  positionStep: 0
+  obs: []
+  nav_script: {fileID: 0}
 --- !u!4 &1332548964 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4861186513528904675, guid: 93386aa092ff01846bdd8fd0c3d09c7a, type: 3}
@@ -2726,6 +2754,55 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3112426290903705521, guid: 65107feda62484647892d052fdd768e4, type: 3}
   m_PrefabInstance: {fileID: 284328748571682558}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1843331860
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1843331862}
+  - component: {fileID: 1843331861}
+  m_Layer: 0
+  m_Name: Navigation
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1843331861
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1843331860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f425b732b7a11d49ba45892b1a02dc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debug_calculate_navigation: 0
+  start_point: {fileID: 0}
+  end_point: {fileID: 0}
+  roads: []
+  active_target: {fileID: 0}
+--- !u!4 &1843331862
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1843331860}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 34.73816, y: -84.112, z: -56.517654}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2251337057596110110}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1891382045
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4004,7 +4081,7 @@ GameObject:
   - component: {fileID: 4145743459386357970}
   m_Layer: 0
   m_Name: Track
-  m_TagString: Road
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4160,6 +4237,7 @@ Transform:
   - {fileID: 1281401097}
   - {fileID: 6093037075632996597}
   - {fileID: 390996710}
+  - {fileID: 1843331862}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!146 &2314190595016018122
@@ -4782,7 +4860,7 @@ GameObject:
   - component: {fileID: 1985779409639990320}
   m_Layer: 0
   m_Name: Track
-  m_TagString: Road
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6581,7 +6659,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &9017643782424235143
 GameObject:
   m_ObjectHideFlags: 0

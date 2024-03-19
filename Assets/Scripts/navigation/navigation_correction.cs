@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class navigation : MonoBehaviour
+public class navigation_correction : MonoBehaviour
 {
     // Gives a visualisation of the path found by the algorithm
     [SerializeField] private bool debug_calculate_navigation;
